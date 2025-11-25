@@ -1,0 +1,368 @@
+openapi: 3.0.0
+info:
+  version: '0.1'
+  title: "Explento OpenAPI 3.0"
+  description: "REST API documentation for the Explento web platform"
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+
+components:
+  schemas:
+    PublicUser:
+      type: object
+      properties:
+        _self:
+          type: string
+        username:
+          type: string
+        exp:
+          type: integer
+        profile-pic:
+          type: string
+
+    Profile:
+      type: object
+      properties:
+        _self:
+          type: string
+        username:
+          type: string
+        exp:
+          type: string
+        profile-pic:
+          type: string
+        name:
+          type: string
+        surname:
+          type: string
+        email:
+          type: string
+
+    Place:
+      type: object
+      properties:
+        _self:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        categories:
+          type: string
+
+    # FIX: Sistemare schema in base al DB
+    Mission:
+      type: object
+      properties:
+        _self:
+          type: string
+
+    UserLocation:
+      type: object
+      required:
+        - lat
+        - lng
+      properties:
+        lat:
+          type: number
+          format: float
+        lng:
+          type: number
+          format: float
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: boolean
+        message:
+          type: string
+    
+    RegistrationRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        surname:
+          type: string
+        email:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - name
+        - surname
+        - username
+        - password
+        - email
+      
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+
+  /auth/login:
+    post:
+      summary: "User authentication"
+      description: "Authenticate a user using a username and password. Returns a JWT token on success."
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        200:
+          description: "Authentication successful. A valid JWT token is returned."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        401:
+          description: "Authentication failed due to invalid credentials."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/register:
+    post:
+      summary: "User registration"
+      description: "Create a new user account."
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationRequest"
+      responses:
+        200:
+          description: "User registered successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        400:
+          description: "Registration failed due to invalid data or an existing account."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/operator/login:
+    post:
+      summary: "Operator authentication"
+      description: "Authenticate an operator using their credentials. Returns a JWT token on success."
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        200:
+          description: "Operator authenticated successfully. A valid JWT token is returned."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        401:
+          description: "Invalid operator credentials."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # NOTE: Facciamo che possibile visualizzare profili utenti oppure solo se il tuo profilo???
+  # In caso bisogna gestire il fatto che vengono inviati dati diversi (magari la email non dovrebbe essere pubblica)
+  
+  /users/{username}:
+    get:
+      summary: "Retrieve user profile"
+      description: "Fetch public profile information for the specified username."
+      tags:
+        - Users
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: "Public user profile returned successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicUser"
+
+  /users:
+    get:
+      summary: "List users"
+      description: "Retrieve all users. Optionally filter by expert status."
+      tags:
+        - Users
+      parameters:
+        - in: query
+          name: expert
+          required: false
+          schema:
+            type: boolean
+          description: "Return only expert users when set to true."
+      responses:
+        200:
+          description: "List of users returned successfully."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicUser"
+
+  /places:
+    get:
+      summary: "Recommended places"
+      description: "Return personalized place recommendations for the authenticated user."
+      security:
+        - BearerAuth: []
+      tags:
+        - Places
+      responses:
+        200:
+          description: "List of recommended places."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Place"
+
+  /places/{id}:
+    get:
+      summary: "Place details"
+      description: "Retrieve detailed information about a place using its ID."
+      tags:
+        - Places
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: "Place details returned successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Place"
+
+    post:
+      summary: "Complete a place"
+      description: "Mark the specified place as completed by the authenticated user. Requires the user's location."
+      tags:
+        - Places
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLocation"
+      responses:
+        200:
+          description: "Place successfully marked as completed."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        400:
+          description: "Could not complete the place due to invalid data or constraints."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /missions:
+    get:
+      summary: "List missions"
+      description: "Retrieve all missions available to the authenticated user."
+      security:
+        - BearerAuth: []
+      tags:
+        - Missions
+      responses:
+        200:
+          description: "List of missions."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Mission"
+
+  /missions/{id}:
+    get:
+      summary: "Mission details"
+      description: "Get detailed information about a specific mission."
+      security:
+        - BearerAuth: []
+      tags:
+        - Missions
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: "Mission information returned successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mission"
