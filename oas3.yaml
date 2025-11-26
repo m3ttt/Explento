@@ -5,7 +5,7 @@ info:
   description: "REST API documentation for the Explento web platform"
 
 servers:
-  - url: http://localhost:8000/api/v1
+  - url: http://localhost:3000/api/v1
     description: Local development server
 
 components:
@@ -13,13 +13,13 @@ components:
     PublicUser:
       type: object
       properties:
-        _self:
+        self:
           type: string
         username:
           type: string
         exp:
           type: integer
-        profile-pic:
+        profilePicture:
           type: string
 
     Profile:

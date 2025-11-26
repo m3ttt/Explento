@@ -7,10 +7,12 @@
   },
   "scripts": {
     "dev": "nodemon -e ts  --exec \"npm run compile\"",
-    "compile": "tsc && node dist/server.js"
+    "compile": "tsc && node dist/server.js || exit 1"
   },
   "dependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.5",
+    "bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "mongoose": "^9.0.0"

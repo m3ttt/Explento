@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import { InferSchemaType, Schema, model } from "mongoose";
 
 const PlaceSchema = new Schema({
     name: String,
@@ -12,4 +12,5 @@ const PlaceSchema = new Schema({
     isFree: Boolean,
 });
 
-export default model("Place", PlaceSchema);
+export type PlaceType = InferSchemaType<typeof PlaceSchema>;
+export const Place = model("Place", PlaceSchema);
