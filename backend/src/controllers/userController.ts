@@ -1,9 +1,12 @@
 import mongoose from "mongoose";
 import User from "../models/User.js"; // schema User MongoDB
+import type { Request, Response } from "express";
 
-export const getUserById = async (req, res) => {
+export const getUserById = async (req: Request, res: Response) => {
     const { id } = req.params;
-    // console.log("ID ricevuto:", id);
+
+    if (id == undefined)
+        return res.status(400).json({ message: "Nessun ID inserito" });
 
     // Controllo se l'ID è un ObjectId valido
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -15,8 +18,6 @@ export const getUserById = async (req, res) => {
         // .populate('visitedPlaces.placeId')
         // .populate('missionsProgress.missionId')
         // .populate('missionsProgress.visitedPlaces.placeId');
-
-        // console.log("Utente trovato:", user);
 
         if (!user) {
             return res.status(404).json({ message: "Utente non trovato" });
