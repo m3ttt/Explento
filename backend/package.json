@@ -6,7 +6,7 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
-    "dev": "nodemon main.js"
+    "dev": "nodemon src/main.js"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
