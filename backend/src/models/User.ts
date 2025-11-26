@@ -11,6 +11,10 @@ const UserSchema = new Schema({
     password: String,
     profileImage: String,
     preferences: [String],
+    expert: {
+        type: Boolean,
+        default: false,
+    },
     exp: {
         type: Number,
         default: 0,

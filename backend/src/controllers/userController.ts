@@ -32,8 +32,14 @@ export const getUserByUsername = async (req: Request, res: Response) => {
     }
 };
 
-export const getAllUsers = async (_: Request, res: Response) => {
-    const users = await User.find();
+export const getAllUsers = async (req: Request, res: Response) => {
+    const { expert } = req.query;
+
+    let users;
+
+    if (expert == "true") users = await User.find({ expert: true });
+    else users = await User.find();
+
     const parsedUser: any[] = [];
 
     users.forEach((u: UserType) => {
