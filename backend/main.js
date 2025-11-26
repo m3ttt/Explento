@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
-import { connectDatabase } from "./db.js";
-import User from "./models/User.js";
+import { connectDatabase } from "./src/db.js";
+import User from "./src/models/User.js";
 import express from "express";
 
 dotenv.config();
