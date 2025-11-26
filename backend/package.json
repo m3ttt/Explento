@@ -8,7 +8,6 @@
   "scripts": {
     "dev": "node main.js"
   },
-
   "dependencies": {
     "dotenv": "^17.2.3",
     "mongoose": "^9.0.0"
