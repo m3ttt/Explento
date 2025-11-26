@@ -10,6 +10,7 @@ const UserSchema = new Schema({
     surname: String,
     password: String,
     profileImage: String,
+    preferences: [String],
     exp: {
         type: Number,
         default: 0,
