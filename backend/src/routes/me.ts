@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.use(authenticate);
 
-router.get("/", getMeInformation);
+router.get("", getMeInformation);
 router.post("/visit/:id", triggerVisit);
 
 export default router;
