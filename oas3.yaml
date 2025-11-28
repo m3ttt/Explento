@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  version: '0.1'
+  version: '0.2'
   title: "Explento OpenAPI 3.0"
   description: "REST API documentation for the Explento web platform"
 
@@ -10,69 +10,118 @@ servers:
 
 components:
   schemas:
-    PublicUser:
+    User:
       type: object
       properties:
-        self:
+        _id:
           type: string
         username:
           type: string
-        exp:
-          type: integer
-        profilePicture:
-          type: string
-
-    Profile:
-      type: object
-      properties:
-        _self:
-          type: string
-        username:
-          type: string
-        exp:
-          type: string
-        profile-pic:
+        email:
           type: string
         name:
           type: string
         surname:
           type: string
-        email:
+        profileImage:
           type: string
+        preferences:
+          type: array
+          items:
+            type: string
+        expert:
+          type: boolean
+        exp:
+          type: integer
+        places:
+          type: array
+          items:
+            type: object
+            properties:
+              placeId:
+                type: string
+              visit:
+                type: object
+                properties:
+                  visited:
+                    type: boolean
+                  date:
+                    type: string
+                    format: date-time
+        missionsProgress:
+          type: array
+          items:
+            type: object
+            properties:
+              missionId:
+                type: string
+              visitedPlaces:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    placeId:
+                      type: string
+              progress:
+                type: number
+              completed:
+                type: boolean
 
     Place:
       type: object
       properties:
-        _self:
-          type: string
-        id:
+        _id:
           type: string
         name:
           type: string
         description:
           type: string
         categories:
-          type: string
+          type: array
+          items:
+            type: string
+        location:
+          type: object
+          properties:
+            lat:
+              type: number
+              format: float
+            lon:
+              type: number
+              format: float
+        images:
+          type: array
+          items:
+            type: string
+        isFree:
+          type: boolean
 
-    # FIX: Sistemare schema in base al DB
     Mission:
       type: object
       properties:
-        _self:
+        _id:
           type: string
-
-    UserLocation:
-      type: object
-      required:
-        - lat
-        - lng
-      properties:
-        lat:
-          type: number
-          format: float
-        lng:
-          type: number
-          format: float
+        name:
+          type: string
+        description:
+          type: string
+        minLevel:
+          type: integer
+        rewardExp:
+          type: integer
+        categories:
+          type: array
+          items:
+            type: string
+        places:
+          type: array
+          items:
+            type: object
+            properties:
+              placeId:
+                type: string
+        requiredCount:
+          type: integer
 
     LoginRequest:
       type: object
@@ -85,17 +134,6 @@ components:
         password:
           type: string
 
-    ErrorResponse:
-      type: object
-      required:
-        - error
-        - message
-      properties:
-        error:
-          type: boolean
-        message:
-          type: string
-    
     RegistrationRequest:
       type: object
       properties:
@@ -115,7 +153,31 @@ components:
         - username
         - password
         - email
-      
+
+    UserLocation:
+      type: object
+      required:
+        - lat
+        - lng
+      properties:
+        lat:
+          type: number
+          format: float
+        lng:
+          type: number
+          format: float
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: boolean
+        message:
+          type: string
+
   securitySchemes:
     BearerAuth:
       type: http
@@ -123,13 +185,10 @@ components:
       bearerFormat: JWT
 
 paths:
-
   /auth/login:
     post:
       summary: "User authentication"
-      description: "Authenticate a user using a username and password. Returns a JWT token on success."
-      tags:
-        - Authentication
+      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -138,7 +197,7 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         200:
-          description: "Authentication successful. A valid JWT token is returned."
+          description: "Authentication successful"
           content:
             application/json:
               schema:
@@ -147,7 +206,7 @@ paths:
                   token:
                     type: string
         401:
-          description: "Authentication failed due to invalid credentials."
+          description: "Invalid credentials"
           content:
             application/json:
               schema:
@@ -156,9 +215,7 @@ paths:
   /auth/register:
     post:
       summary: "User registration"
-      description: "Create a new user account."
-      tags:
-        - Authentication
+      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -171,9 +228,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/User"
         400:
-          description: "Registration failed due to invalid data or an existing account."
+          description: "Invalid data or user already exists"
           content:
             application/json:
               schema:
@@ -182,9 +239,7 @@ paths:
   /auth/operator/login:
     post:
       summary: "Operator authentication"
-      description: "Authenticate an operator using their credentials. Returns a JWT token on success."
-      tags:
-        - Authentication
+      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -193,7 +248,7 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         200:
-          description: "Operator authenticated successfully. A valid JWT token is returned."
+          description: "Operator authenticated"
           content:
             application/json:
               schema:
@@ -202,69 +257,78 @@ paths:
                   token:
                     type: string
         401:
-          description: "Invalid operator credentials."
+          description: "Invalid operator credentials"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /me:
+    get:
+      summary: "Get authenticated user profile"
+      description: "Return full user data for the authenticated user."
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: "User profile returned successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        401:
+          description: "Unauthorized"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  # NOTE: Facciamo che possibile visualizzare profili utenti oppure solo se il tuo profilo???
-  # In caso bisogna gestire il fatto che vengono inviati dati diversi (magari la email non dovrebbe essere pubblica)
-  
-  /users/{username}:
-    get:
-      summary: "Retrieve user profile"
-      description: "Fetch public profile information for the specified username."
+  /me/visit/{placeId}:
+    post:
+      summary: "Mark a place as visited"
+      description: "Mark a place as visited for the authenticated user, optionally including location."
       tags:
         - Users
+      security:
+        - BearerAuth: []
       parameters:
-        - name: username
-          in: path
+        - in: path
+          name: placeId
           required: true
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLocation"
       responses:
         200:
-          description: "Public user profile returned successfully."
+          description: "Place successfully marked as visited."
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PublicUser"
-
-  /users:
-    get:
-      summary: "List users"
-      description: "Retrieve all users. Optionally filter by expert status."
-      tags:
-        - Users
-      parameters:
-        - in: query
-          name: expert
-          required: false
-          schema:
-            type: boolean
-          description: "Return only expert users when set to true."
-      responses:
-        200:
-          description: "List of users returned successfully."
+                $ref: "#/components/schemas/User"
+        400:
+          description: "Could not mark place as visited."
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/PublicUser"
+                $ref: "#/components/schemas/ErrorResponse"
 
   /places:
     get:
-      summary: "Recommended places"
-      description: "Return personalized place recommendations for the authenticated user."
+      summary: "List all places"
       security:
         - BearerAuth: []
+      description: "Return all places in the system."
       tags:
         - Places
       responses:
         200:
-          description: "List of recommended places."
+          description: "List of places returned."
           content:
             application/json:
               schema:
@@ -275,53 +339,26 @@ paths:
   /places/{id}:
     get:
       summary: "Place details"
-      description: "Retrieve detailed information about a place using its ID."
-      tags:
-        - Places
       security:
         - BearerAuth: []
+      description: "Return detailed info about a place by its ID."
+      tags:
+        - Places
       parameters:
         - in: path
           name: id
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         200:
-          description: "Place details returned successfully."
+          description: "Place returned successfully."
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Place"
-
-    post:
-      summary: "Complete a place"
-      description: "Mark the specified place as completed by the authenticated user. Requires the user's location."
-      tags:
-        - Places
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserLocation"
-      responses:
-        200:
-          description: "Place successfully marked as completed."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        400:
-          description: "Could not complete the place due to invalid data or constraints."
+        404:
+          description: "Place not found."
           content:
             application/json:
               schema:
@@ -329,15 +366,15 @@ paths:
 
   /missions:
     get:
-      summary: "List missions"
-      description: "Retrieve all missions available to the authenticated user."
+      summary: "List all missions"
       security:
         - BearerAuth: []
+      description: "Return all missions in the system."
       tags:
         - Missions
       responses:
         200:
-          description: "List of missions."
+          description: "List of missions returned."
           content:
             application/json:
               schema:
@@ -348,7 +385,7 @@ paths:
   /missions/{id}:
     get:
       summary: "Mission details"
-      description: "Get detailed information about a specific mission."
+      description: "Return detailed info about a mission by its ID."
       security:
         - BearerAuth: []
       tags:
@@ -358,11 +395,17 @@ paths:
           name: id
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         200:
-          description: "Mission information returned successfully."
+          description: "Mission returned successfully."
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Mission"
+        404:
+          description: "Mission not found."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"

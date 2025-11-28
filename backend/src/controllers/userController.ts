@@ -1,7 +1,6 @@
 import { USERS_ENDPOINT } from "../config.js";
 import { User, UserType } from "../models/User.js"; // schema User MongoDB
 import type { Request, Response } from "express";
-import bcrypt from "bcrypt";
 
 export function parsePublicUser(u: UserType) {
     return {

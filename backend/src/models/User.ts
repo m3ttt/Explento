@@ -1,38 +1,39 @@
 import { InferSchemaType, Schema, model } from "mongoose";
 
 const UserSchema = new Schema({
-    username: {
-        type: String,
-        unique: true,
-    },
+    username: { type: String, unique: true },
     email: String,
     name: String,
     surname: String,
     password: String,
     profileImage: String,
     preferences: [String],
-    expert: {
-        type: Boolean,
-        default: false,
-    },
-    exp: {
-        type: Number,
-        default: 0,
-    },
-    visitedPlaces: [
+    expert: { type: Boolean, default: false },
+    exp: { type: Number, default: 0 },
+
+    places: [
         {
             placeId: {
                 type: Schema.Types.ObjectId,
                 ref: "Place",
+                required: true,
             },
-            date: Date,
+            visited: {
+                type: Boolean,
+                default: false,
+            },
+            date: {
+                type: Date,
+            },
         },
     ],
+
     missionsProgress: [
         {
             missionId: {
                 type: Schema.Types.ObjectId,
                 ref: "Mission",
+                required: true,
             },
             visitedPlaces: [
                 {
@@ -42,8 +43,8 @@ const UserSchema = new Schema({
                     },
                 },
             ],
-            progress: Number,
-            completed: Boolean,
+            progress: { type: Number, default: 0 },
+            completed: { type: Boolean, default: false },
         },
     ],
 });
