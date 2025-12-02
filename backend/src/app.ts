@@ -6,6 +6,9 @@ import cors from "cors";
 
 const app = express();
 app.use(express.json());
+
+// Abilita CORS per permettere richieste
+// da qualsiasi origine (backend e frontend separati)
 app.use(
     cors({
         origin: "*",

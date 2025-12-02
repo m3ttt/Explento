@@ -44,7 +44,7 @@ export async function authenticate(
         if (!foundUser)
             return res
                 .status(401)
-                .json({ error: "Token non valido o scaduto" });
+                .json({ error: "Utente non trovato" });
 
         req.user = foundUser;
 
