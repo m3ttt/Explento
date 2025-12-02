@@ -1,17 +1,17 @@
 import { InferSchemaType, Schema, model } from "mongoose";
 
 const UserSchema = new Schema({
-    username: { type: String, unique: true },
-    email: String,
-    name: String,
-    surname: String,
-    password: String,
+    username: { type: String, unique: true, required: true },
+    email: { type: String, required: true },
+    name: { type: String, required: true },
+    surname: { type: String, required: true },
+    password: { type: String, required: true },
     profileImage: String,
     preferences: [String],
     expert: { type: Boolean, default: false },
     exp: { type: Number, default: 0 },
 
-    places: [
+    visitedPlaces: [
         {
             placeId: {
                 type: Schema.Types.ObjectId,
@@ -28,14 +28,32 @@ const UserSchema = new Schema({
         },
     ],
 
-    missionsProgress: [
+    // storico posti suggeriti all'utente
+    suggestedPlaces: [
+        {
+            placeId: {
+                type: Schema.Types.ObjectId,
+                ref: "Place",
+                required: true,
+            },
+            visited: {
+                type: Boolean,
+                default: false,
+            },
+            date: {
+                type: Date,
+            },
+        },
+    ],
+
+    missionsProgresses: [
         {
             missionId: {
                 type: Schema.Types.ObjectId,
                 ref: "Mission",
                 required: true,
             },
-            visitedPlaces: [
+            requiredPlacesVisited: [
                 {
                     placeId: {
                         type: Schema.Types.ObjectId,
@@ -49,5 +67,8 @@ const UserSchema = new Schema({
     ],
 });
 
+// Tipo TypeScript del documento
 export type UserType = InferSchemaType<typeof UserSchema>;
+
+// Modello Mongoose
 export const User = model("User", UserSchema);

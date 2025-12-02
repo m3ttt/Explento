@@ -1,7 +1,15 @@
 import { USERS_ENDPOINT } from "../config.js";
-import { User, UserType } from "../models/User.js"; // schema User MongoDB
+import { User, UserType } from "../models/User.js";
 import type { Request, Response } from "express";
 
+/**
+ * Converte un utente completo nel suo formato pubblico,
+ * restituendo solo le informazioni visibili all’esterno
+ * e aggiungendo il link alla risorsa pubblica dell’utente.
+ *
+ * @param u - L'utente da trasformare nel formato pubblico
+ * @returns Un oggetto con i dati pubblici dell'utente
+ */
 export function parsePublicUser(u: UserType) {
     return {
         self: `${USERS_ENDPOINT}/${u.username}`,
@@ -11,6 +19,14 @@ export function parsePublicUser(u: UserType) {
     };
 }
 
+/**
+ * Recupera un utente tramite il suo username
+ * e restituisce i dati pubblici associati.
+ *
+ * @param req - La richiesta HTTP contenente lo username nei parametri
+ * @param res - La risposta HTTP usata per inviare il risultato
+ * @returns I dati pubblici dell'utente, oppure un errore adeguato
+ */
 export const getUserByUsername = async (req: Request, res: Response) => {
     const { username } = req.params;
 
@@ -31,21 +47,31 @@ export const getUserByUsername = async (req: Request, res: Response) => {
     }
 };
 
+
+/**
+ * Recupera la lista di tutti gli utenti,
+ * con possibilità di filtrare per il campo "expert".
+ *
+ * @param req - La richiesta HTTP, che può contenere il parametro di query `expert`
+ * @param res - La risposta HTTP usata per restituire la lista degli utenti
+ * @returns Un array di utenti in formato pubblico, eventualmente filtrati
+ */
 export const getAllUsers = async (req: Request, res: Response) => {
     const { expert } = req.query;
 
-    let users;
+    try {
+        let filter: any = {};
+        if (expert === "true") filter.expert = true;
+        else if (expert === "false") filter.expert = false;
 
-    if (expert == "true") users = await User.find({ expert: true });
-    else users = await User.find();
+        const users = await User.find(filter);
 
-    const parsedUser: any[] = [];
-
-    users.forEach((u: UserType) => {
-        parsedUser.push(parsePublicUser(u));
-    });
-
-    res.status(200).json(parsedUser);
+        const parsedUsers = users.map(u => parsePublicUser(u));
+        res.status(200).json(parsedUsers);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Errore del server" });
+    }
 };
 
 // Bisogna metterlo nell'endpoint /auth/register
