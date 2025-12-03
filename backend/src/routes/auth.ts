@@ -1,7 +1,8 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response, Router } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { User, UserType } from "../models/User.js";
 import { Document } from "mongoose";
+import { loginUser } from "../controllers/authController.js";
 
 export interface AuthRequest extends Request {
     user?: UserType & Document;
@@ -42,9 +43,7 @@ export async function authenticate(
             | (UserType & Document)
             | null;
         if (!foundUser)
-            return res
-                .status(401)
-                .json({ error: "Utente non trovato" });
+            return res.status(401).json({ error: "Utente non trovato" });
 
         req.user = foundUser;
 
@@ -53,3 +52,8 @@ export async function authenticate(
         return res.status(401).json({ error: "Token non valido o scaduto" });
     }
 }
+
+const router = Router();
+router.post("/login", loginUser);
+
+export { router };
