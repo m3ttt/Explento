@@ -35,5 +35,8 @@ const PlaceEditRequestSchema = new Schema(
     { timestamps: true }
 );
 
+// Tipo TypeScript del documento
 export type PlaceEditRequestType = InferSchemaType<typeof PlaceEditRequestSchema>;
+
+// Modello Mongoose
 export const PlaceEditRequest = model("PlaceEditRequest", PlaceEditRequestSchema);
