@@ -18,7 +18,7 @@ import type { ParsedQs } from "qs";
 export const triggerVisitPlace = async (req: AuthRequest, resp: Response) => {
     if (!req.user) return;
 
-    const validationError = await validateVisit(req.user, req.query.placeId, req.body.lat, req.body.lon);
+    const validationError = await validateVisit(req.query.placeId, req.body.lat, req.body.lon);
     if (validationError) return resp.status(400).json({ error: validationError });
 
     // placeId una volta validato può essere una stringa o un array di string
@@ -43,7 +43,6 @@ export const triggerVisitPlace = async (req: AuthRequest, resp: Response) => {
  * @returns Un messaggio di errore se la visita non è valida, altrimenti null
  */
 async function validateVisit(
-    user: UserType,
     placeId: string | ParsedQs | (string | ParsedQs)[] | undefined,
     lat: any,
     lon: any
