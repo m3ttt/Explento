@@ -2,7 +2,7 @@ import { NextFunction, Request, Response, Router } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { User, UserType } from "../models/User.js";
 import { Document } from "mongoose";
-import { loginUser } from "../controllers/authController.js";
+import { loginUser, registerUser } from "../controllers/authController.js";
 
 export interface AuthRequest extends Request {
     user?: UserType & Document;
@@ -55,5 +55,6 @@ export async function authenticate(
 
 const router = Router();
 router.post("/login", loginUser);
+router.post("/register", registerUser);
 
 export { router };

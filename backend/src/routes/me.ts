@@ -1,6 +1,9 @@
 import express from "express";
 import { authenticate } from "./auth.js";
-import { triggerVisitPlace, getMeInformation } from "../controllers/meController.js";
+import {
+    triggerVisitPlace,
+    getMeInformation,
+} from "../controllers/meController.js";
 const router = express.Router();
 
 router.use(authenticate);

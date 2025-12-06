@@ -5,7 +5,7 @@ const OperatorSchema = new Schema({
     password: { type: String, required: true },
     role: { type: String, default: "operator" }, // utile per future espansioni
     name: String,
-    surname: String
+    surname: String,
 });
 
 // Tipo TypeScript del documento

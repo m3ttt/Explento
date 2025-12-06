@@ -1,9 +1,9 @@
 import { InferSchemaType, Schema, model } from "mongoose";
 
 const PlaceSchema = new Schema({
-    name: {type: String, required: true},
+    name: { type: String, required: true },
     description: String,
-    categories: {type: [String], required: true},
+    categories: { type: [String], required: true },
     location: {
         lat: { type: Number, required: true },
         lon: { type: Number, required: true },
