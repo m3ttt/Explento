@@ -17,8 +17,6 @@ export async function operatorAuthenticate(
 ) {
     const authHeader = req.headers.authorization;
 
-    console.log("operatorAuthenticate TRIGGERED:", req.path);
-
     if (!authHeader) {
         return res.status(401).json({ error: "Manca header autorizzazione" });
     }
@@ -64,7 +62,7 @@ router.post("/login", loginOperator);
 // Da qui in poi richieste autenticate
 router.use(operatorAuthenticate);
 
-router.get("/place_requests", getAllPlaceEdits);
-router.get("/place_requests/:id", getPlaceEdits);
+router.get("/place_edit_requests", getAllPlaceEdits);
+router.get("/place_edit_requests/:id", getPlaceEdits);
 
 export default router;
