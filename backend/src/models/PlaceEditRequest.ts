@@ -32,11 +32,16 @@ const PlaceEditRequestSchema = new Schema(
 
         operatorComment: String,
     },
-    { timestamps: true }
+    { timestamps: true },
 );
 
 // Tipo TypeScript del documento
-export type PlaceEditRequestType = InferSchemaType<typeof PlaceEditRequestSchema>;
+export type PlaceEditRequestType = InferSchemaType<
+    typeof PlaceEditRequestSchema
+>;
 
 // Modello Mongoose
-export const PlaceEditRequest = model("PlaceEditRequest", PlaceEditRequestSchema);
+export const PlaceEditRequest = model(
+    "PlaceEditRequest",
+    PlaceEditRequestSchema,
+);

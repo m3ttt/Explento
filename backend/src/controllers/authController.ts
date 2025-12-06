@@ -19,9 +19,7 @@ export async function loginUser(req: Request, resp: Response) {
     if (username == "" || password == "")
         return resp.status(400).json({ error: "Credenziali non fornite" });
 
-    // NOTE: Teniamo a lowercase???
-    // Imposto toLowerCase per evitare di avere username duplicati del genere: Test e test
-    const foundUser = await User.findOne({ username: username.toLowerCase() });
+    const foundUser = await User.findOne({ username: username });
     if (foundUser == null)
         return resp.status(400).json({ error: "Username o password errati" });
 
@@ -73,9 +71,7 @@ export const registerUser = async (req: Request, res: Response) => {
 
     try {
         const newUser = await User.create({
-            // NOTE: Teniamo a lowercase???
-            // Imposto a lower case per la questione duplicati
-            username: username.toString().toLowerCase(),
+            username: username.toString(),
             name: name,
             surname: surname,
             email: email,
@@ -83,7 +79,8 @@ export const registerUser = async (req: Request, res: Response) => {
             exp: 0,
         });
         res.status(200).json(newUser);
-    } catch (_) {
+    } catch (e) {
+        console.log(e);
         res.status(400).json({ error: "Errore nella creazione dell'utente" });
     }
 };

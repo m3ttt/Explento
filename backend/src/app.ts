@@ -1,7 +1,13 @@
 import express from "express";
 import userRoutes from "./routes/users.js";
 import meRoutes from "./routes/me.js";
-import { USERS_ENDPOINT, ME_ENDPOINT, AUTH_ENDPOINT } from "./config.js";
+import operatorRouter from "./routes/operator.js";
+import {
+    USERS_ENDPOINT,
+    ME_ENDPOINT,
+    AUTH_ENDPOINT,
+    OPERATOR_ENDPOINT,
+} from "./config.js";
 import cors from "cors";
 import { router as authRouter } from "./routes/auth.js";
 
@@ -19,5 +25,6 @@ app.use(
 app.use(USERS_ENDPOINT, userRoutes);
 app.use(ME_ENDPOINT, meRoutes);
 app.use(AUTH_ENDPOINT, authRouter);
+app.use(OPERATOR_ENDPOINT, operatorRouter);
 
 export default app;
