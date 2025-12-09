@@ -1,411 +1,436 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
-  version: '0.2'
-  title: "Explento OpenAPI 3.0"
-  description: "REST API documentation for the Explento web platform"
+  title: API Specification for Explento WebApp
+  version: 1.0.0
 
 servers:
   - url: http://localhost:3000/api/v1
-    description: Local development server
 
-components:
-  schemas:
-    User:
-      type: object
-      properties:
-        _id:
-          type: string
-        username:
-          type: string
-        email:
-          type: string
-        name:
-          type: string
-        surname:
-          type: string
-        profileImage:
-          type: string
-        preferences:
-          type: array
-          items:
-            type: string
-        expert:
-          type: boolean
-        exp:
-          type: integer
-        places:
-          type: array
-          items:
-            type: object
-            properties:
-              placeId:
-                type: string
-              visit:
+paths:
+
+  ##########################
+  # AUTH
+  ##########################
+
+  /auth/login:
+    post:
+      summary: Login utente
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required: [username, password]
+      responses:
+        "200":
+          description: Login effettuato
+          content:
+            application/json:
+              schema:
                 type: object
                 properties:
-                  visited:
-                    type: boolean
-                  date:
+                  token:
                     type: string
-                    format: date-time
-        missionsProgress:
-          type: array
-          items:
-            type: object
-            properties:
-              missionId:
-                type: string
-              visitedPlaces:
+        "401":
+          description: Credenziali non valide
+
+  /auth/register:
+    post:
+      summary: Registrazione utente
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                name:
+                  type: string
+                surname:
+                  type: string
+                password:
+                  type: string
+              required: [username, email, name, surname, password]
+      responses:
+        "201":
+          description: Utente registrato
+        "400":
+          description: Dati non validi
+
+  ##########################
+  # ME
+  ##########################
+
+  /me:
+    get:
+      summary: Ottieni informazioni sull'utente autenticato
+      tags: [Me]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Informazioni utente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Non autorizzato
+
+  /me/visit/{id}:
+    post:
+      summary: Registra la visita di un luogo tramite coordinate GPS
+      tags: [Me]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lat:
+                  type: number
+                lon:
+                  type: number
+              required: [lat, lon]
+      responses:
+        "200":
+          description: Visita registrata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+        "400":
+          description: Errore di validazione
+        "401":
+          description: Non autorizzato
+
+  ##########################
+  # USERS
+  ##########################
+
+  /users:
+    get:
+      summary: Ottieni lista utenti
+      tags: [Users]
+      parameters:
+        - name: expert
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Lista utenti
+          content:
+            application/json:
+              schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    placeId:
-                      type: string
-              progress:
-                type: number
-              completed:
-                type: boolean
+                  $ref: "#/components/schemas/User"
 
-    Place:
-      type: object
-      properties:
-        _id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        categories:
-          type: array
-          items:
+  /users/{username}:
+    get:
+      summary: Ottieni utente tramite username
+      tags: [Users]
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
             type: string
-        location:
-          type: object
-          properties:
-            lat:
-              type: number
-              format: float
-            lon:
-              type: number
-              format: float
-        images:
-          type: array
-          items:
+      responses:
+        "200":
+          description: Utente trovato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Utente non trovato
+
+  ##########################
+  # OPERATOR
+  ##########################
+
+  /operator/login:
+    post:
+      summary: Login operatore
+      tags: [Operator]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required: [email, password]
+      responses:
+        "200":
+          description: Login effettuato
+        "401":
+          description: Credenziali non valide
+
+  /operator/place_edit_requests:
+    get:
+      summary: Ottieni tutte le richieste di modifica luogo
+      tags: [Operator]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista richieste
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlaceEdit"
+
+  /operator/place_edit_requests/{id}:
+    get:
+      summary: Ottieni una specifica richiesta di modifica
+      tags: [Operator]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
             type: string
-        isFree:
-          type: boolean
+      responses:
+        "200":
+          description: Richiesta trovata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlaceEdit"
+        "404":
+          description: Richiesta non trovata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
-    Mission:
-      type: object
-      properties:
-        _id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        minLevel:
-          type: integer
-        rewardExp:
-          type: integer
-        categories:
-          type: array
-          items:
+    post:
+      summary: Aggiorna lo stato di una richiesta di modifica
+      tags: [Operator]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
             type: string
-        places:
-          type: array
-          items:
-            type: object
-            properties:
-              placeId:
-                type: string
-        requiredCount:
-          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pending, approved, rejected]
+                operatorComment:
+                  type: string
+      responses:
+        "200":
+          description: Stato aggiornato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        "400":
+          description: Errore richiesta non valida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Richiesta non trovata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
-    LoginRequest:
-      type: object
-      required:
-        - username
-        - password
-      properties:
-        username:
-          type: string
-        password:
-          type: string
-
-    RegistrationRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        surname:
-          type: string
-        email:
-          type: string
-        username:
-          type: string
-        password:
-          type: string
-      required:
-        - name
-        - surname
-        - username
-        - password
-        - email
-
-    UserLocation:
-      type: object
-      required:
-        - lat
-        - lng
-      properties:
-        lat:
-          type: number
-          format: float
-        lng:
-          type: number
-          format: float
-
-    ErrorResponse:
-      type: object
-      required:
-        - error
-        - message
-      properties:
-        error:
-          type: boolean
-        message:
-          type: string
+components:
 
   securitySchemes:
-    BearerAuth:
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
 
-paths:
-  /auth/login:
-    post:
-      summary: "User authentication"
-      tags: [Authentication]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-      responses:
-        200:
-          description: "Authentication successful"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-        401:
-          description: "Invalid credentials"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+  schemas:
 
-  /auth/register:
-    post:
-      summary: "User registration"
-      tags: [Authentication]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RegistrationRequest"
-      responses:
-        200:
-          description: "User registered successfully."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-        400:
-          description: "Invalid data or user already exists"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+    ##########################
+    # USER
+    ##########################
 
-  /auth/operator/login:
-    post:
-      summary: "Operator authentication"
-      tags: [Authentication]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-      responses:
-        200:
-          description: "Operator authenticated"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-        401:
-          description: "Invalid operator credentials"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  /me:
-    get:
-      summary: "Get authenticated user profile"
-      description: "Return full user data for the authenticated user."
-      tags:
-        - Users
-      security:
-        - BearerAuth: []
-      responses:
-        200:
-          description: "User profile returned successfully."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-        401:
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        username: { type: string }
+        email: { type: string }
+        name: { type: string }
+        surname: { type: string }
+        profileImage: { type: string }
+        preferences:
+          type: array
+          items: { type: string }
+        expert: { type: boolean }
+        exp: { type: number }
+        visitedPlaces:
+          type: array
+          items:
+            $ref: "#/components/schemas/VisitedPlace"
+        suggestedPlaces:
+          type: array
+          items:
+            $ref: "#/components/schemas/VisitedPlace"
+        missionsProgresses:
+          type: array
+          items:
+            $ref: "#/components/schemas/MissionProgress"
 
-  /me/visit/{placeId}:
-    post:
-      summary: "Mark a place as visited"
-      description: "Mark a place as visited for the authenticated user, optionally including location."
-      tags:
-        - Users
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: placeId
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserLocation"
-      responses:
-        200:
-          description: "Place successfully marked as visited."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-        400:
-          description: "Could not mark place as visited."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+    VisitedPlace:
+      type: object
+      properties:
+        placeId: { type: string }
+        visited: { type: boolean }
+        date:
+          type: string
+          format: date-time
 
-  /places:
-    get:
-      summary: "List all places"
-      security:
-        - BearerAuth: []
-      description: "Return all places in the system."
-      tags:
-        - Places
-      responses:
-        200:
-          description: "List of places returned."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Place"
+    MissionProgress:
+      type: object
+      properties:
+        missionId: { type: string }
+        requiredPlacesVisited:
+          type: array
+          items:
+            type: object
+            properties:
+              placeId: { type: string }
+        progress: { type: number }
+        completed: { type: boolean }
 
-  /places/{id}:
-    get:
-      summary: "Place details"
-      security:
-        - BearerAuth: []
-      description: "Return detailed info about a place by its ID."
-      tags:
-        - Places
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: "Place returned successfully."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Place"
-        404:
-          description: "Place not found."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+    ##########################
+    # OPERATOR
+    ##########################
 
-  /missions:
-    get:
-      summary: "List all missions"
-      security:
-        - BearerAuth: []
-      description: "Return all missions in the system."
-      tags:
-        - Missions
-      responses:
-        200:
-          description: "List of missions returned."
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Mission"
+    Operator:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        role: { type: string }
+        name: { type: string }
+        surname: { type: string }
 
-  /missions/{id}:
-    get:
-      summary: "Mission details"
-      description: "Return detailed info about a mission by its ID."
-      security:
-        - BearerAuth: []
-      tags:
-        - Missions
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: "Mission returned successfully."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Mission"
-        404:
-          description: "Mission not found."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+    ##########################
+    # PLACE
+    ##########################
+
+    Place:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        categories:
+          type: array
+          items: { type: string }
+        location:
+          type: object
+          properties:
+            lat: { type: number }
+            lon: { type: number }
+        images:
+          type: array
+          items: { type: string }
+        isFree: { type: boolean }
+
+    ##########################
+    # MISSIONS
+    ##########################
+
+    Mission:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        minLevel: { type: number }
+        rewardExp: { type: number }
+        categories:
+          type: array
+          items: { type: string }
+        requiredPlaces:
+          type: array
+          items:
+            type: object
+            properties:
+              placeId: { type: string }
+        requiredCount: { type: number }
+
+    ##########################
+    # PLACE EDIT REQUEST
+    ##########################
+
+    PlaceEdit:
+      type: object
+      properties:
+        id: { type: string }
+        placeId: { type: string }
+        userId: { type: string }
+        proposedChanges:
+          type: object
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        operatorId: { type: string }
+        operatorComment: { type: string }
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+
