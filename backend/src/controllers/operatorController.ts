@@ -4,6 +4,7 @@ import { compare } from "bcrypt";
 import pkg from "jsonwebtoken";
 import { OperatorAuthRequest } from "../routes/operator.js";
 import { PlaceEditRequest } from "../models/PlaceEditRequest.js";
+import { Place } from "../models/Place.js";
 const { sign } = pkg;
 
 export const loginOperator = async (req: Request, resp: Response) => {
@@ -46,7 +47,12 @@ export const getAllPlaceEdits = async (
 ) => {
     const { placeId } = req.query;
 
-    const reqs = await PlaceEditRequest.find();
+    let reqs;
+    if (placeId != "") {
+        reqs = await PlaceEditRequest.find({ placeId: placeId });
+    } else {
+        reqs = await PlaceEditRequest.find();
+    }
 
     return resp.status(200).json(reqs);
 };
@@ -69,4 +75,59 @@ export const getPlaceEdits = async (
     }
 
     return res.status(200).json(placeEdit);
+};
+
+export const updatePlaceEdits = async (
+    req: OperatorAuthRequest,
+    resp: Response,
+) => {
+    const { id } = req.params;
+    if (!id) {
+        return resp.status(400).json({ message: "Nessun id inserito" });
+    }
+
+    if (!req.operator) {
+        return resp.status(401).json({ message: "Operatore non autenticato" });
+    }
+
+    const { status, operatorComment } = req.body;
+
+    const allowedStatuses = ["pending", "approved", "rejected"];
+    if (!allowedStatuses.includes(status)) {
+        return resp.status(400).json({ message: "Stato non valido" });
+    }
+
+    // Recupero la richiesta di modifica
+    const editRequest = await PlaceEditRequest.findById(id);
+    if (!editRequest) {
+        return resp
+            .status(404)
+            .json({ message: "PlaceEditRequest non trovata" });
+    }
+
+    editRequest.status = status;
+
+    if (operatorComment) {
+        editRequest.operatorComment = operatorComment;
+    }
+
+    if (status === "approved") {
+        const place = await Place.findById(editRequest.placeId);
+        if (!place) {
+            return resp
+                .status(404)
+                .json({ message: "Place originale non trovato" });
+        }
+
+        // Applica modifiche come merge al posto che fa riferimento
+        Object.assign(place, editRequest.proposedChanges);
+
+        await place.save();
+    }
+
+    await editRequest.save();
+
+    return resp
+        .status(200)
+        .json({ message: "Richiesta aggiornata correttamente" });
 };

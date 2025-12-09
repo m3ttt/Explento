@@ -5,6 +5,7 @@ import {
     loginOperator,
     getAllPlaceEdits,
     getPlaceEdits,
+    updatePlaceEdits,
 } from "../controllers/operatorController.js";
 
 export interface OperatorAuthRequest extends Request {
@@ -45,7 +46,9 @@ export async function operatorAuthenticate(
             | (OperatorType & Document)
             | null;
         if (!foundOperator)
-            return res.status(401).json({ error: "Operatore non trovato" });
+            return res
+                .status(401)
+                .json({ error: "Operatore non trovato o permessi mancanti" });
 
         req.operator = foundOperator;
 
@@ -64,5 +67,6 @@ router.use(operatorAuthenticate);
 
 router.get("/place_edit_requests", getAllPlaceEdits);
 router.get("/place_edit_requests/:id", getPlaceEdits);
+router.post("/place_edit_requests/:id", updatePlaceEdits);
 
 export default router;
