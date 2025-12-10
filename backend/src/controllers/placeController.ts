@@ -14,6 +14,59 @@ export const getPlaces = async (req: AuthRequest, res: Response) => {
     }
 };
 
+function validatePlaceBase(
+    name: string,
+    description: string | undefined,
+    categories: string[],
+    location: { lat: number | string; lon: number | string },
+    isFree: boolean,
+    images?: string[],
+) {
+    if (!name || name.trim().length === 0) return "Nome mancante";
+    if (name.length < 3) return "Nome troppo corto";
+    if (name.length > 100) return "Nome troppo lungo";
+
+    if (!categories || !Array.isArray(categories) || categories.length === 0)
+        return "Categorie non valide";
+
+    for (const cat of categories) {
+        if (typeof cat !== "string" || cat.trim().length === 0)
+            return "Ogni categoria deve essere una stringa non vuota";
+    }
+
+    if (
+        !location ||
+        typeof location.lat === "undefined" ||
+        typeof location.lon === "undefined" ||
+        isNaN(Number(location.lat)) ||
+        isNaN(Number(location.lon))
+    ) {
+        return "Coordinate non valide";
+    }
+
+    if (typeof isFree !== "boolean") return "isFree deve essere booleano";
+
+    if (description && description.length < 10)
+        return "Descrizione troppo corta";
+
+    if (description && description.length > 500)
+        return "Descrizione troppo lunga";
+
+    if (images) {
+        if (!Array.isArray(images)) return "Images deve essere un array";
+        if (images.length > 10) return "Massimo 10 immagini per luogo";
+
+        for (const img of images) {
+            if (typeof img !== "string") return "Immagini non valide";
+            if (!/^data:image\/(png|jpeg|jpg|gif);base64,/.test(img))
+                return "Formato immagine non valido";
+        }
+    }
+
+    return null;
+}
+
+
 // Normalizzazione avanzata stringa
 const normalizeString = (str: string) => {
     return str
@@ -30,13 +83,13 @@ export const createAddPlaceRequest = async (
     req: AuthRequest,
     res: Response,
 ) => {
-    
-    if (!req.user) return res.status(401).json({ message: "Utente non autenticato" });
-    
+    if (!req.user)
+        return res.status(401).json({ message: "Utente non autenticato" });
+
     try {
         const { name, description, categories, location, images, isFree } =
-        req.body;
-        
+            req.body;
+
         const validationError = await validatePlaceUpload(
             name,
             description,
@@ -97,54 +150,10 @@ async function validatePlaceUpload(
     isFree: boolean,
     images?: string[],
 ) {
-    // Validazione nome
-    if (!name || name.trim().length === 0) return "Nome mancante";
-    if (name.length < 3) return "Nome troppo corto";
-    if (name.length > 100) return "Nome troppo lungo";
-
-    // Validazione categories
-    if (!categories || !Array.isArray(categories) || categories.length === 0)
-        return "Categorie non valide";
-    for (const cat of categories) {
-        if (typeof cat !== "string" || cat.trim().length === 0)
-            return "Ogni categoria deve essere una stringa non vuota";
-    }
-
-    // Validazione coordinate
-    if (
-        !location ||
-        typeof location.lat === "undefined" ||
-        typeof location.lon === "undefined" ||
-        isNaN(Number(location.lat)) ||
-        isNaN(Number(location.lon))
-    ) {
-        return "Coordinate non valide";
-    }
-
-    if (typeof isFree !== "boolean") return "isFree deve essere booleano";
-
-    if (description && description.length < 10)
-        return "Descrizione troppo corta";
-    if (description && description.length > 500)
-        return "Descrizione troppo lunga";
-
-    // Validazioni per immagini Base64
-    if (images) {
-        if (!Array.isArray(images)) return "Images deve essere un array";
-        if (images.length > 10) return "Massimo 10 immagini per luogo";
-
-        for (const img of images) {
-            if (typeof img !== "string") return "Immagini non valide";
-            // controllo base se sembra Base64 (non perfetto ma sufficiente per progetto)
-            if (!/^data:image\/(png|jpeg|jpg|gif);base64,/.test(img))
-                return "Formato immagine non valido";
-        }
-    }
-
-    return null;
+    return validatePlaceBase(name, description, categories, location, isFree, images);
 }
 
-export const updatePlace = async (req: AuthRequest, res: Response) => {
+export const createUpdatePlaceRequest = async (req: AuthRequest, res: Response) => {
     if (!req.user) return;
 
     try {
@@ -166,22 +175,33 @@ export const updatePlace = async (req: AuthRequest, res: Response) => {
             images,
             isFree,
         );
+
         if (validationError)
             return res.status(400).json({ error: validationError });
 
-        // Creazione del nuovo luogo
-        const newPlace = new Place({
-            name,
-            description,
-            categories,
-            location,
-            images,
-            isFree,
+        // Creazione della richiesta di modifica
+        const editRequest = new PlaceEditRequest({
+            userId: req.user._id,
+            placeId,
+            isNewPlace: false,
+            status: "pending",
+            proposedChanges: {
+                name,
+                description,
+                categories,
+                location,
+                images,
+                isFree,
+            },
         });
 
-        await newPlace.save();
+        await editRequest.save();
 
-        res.status(201).json(newPlace);
+        return res.status(201).json({
+            message:
+                "Richiesta di modifica inviata e in attesa di approvazione",
+            request: editRequest,
+        });
     } catch (error) {
         console.error("Errore creazione luogo:", error);
         res.status(500).json({ message: "Errore del server" });
@@ -199,63 +219,29 @@ async function validatePlaceUpdate(
 ) {
     if (!placeId) return "Nessun luogo dato";
 
-    // Estrazione sicura di placeId
     let goodPlaceId: string;
 
     if (Array.isArray(placeId)) {
-        goodPlaceId = String(placeId[0]); // Prendo primo elemento
+        goodPlaceId = String(placeId[0]);
     } else if (typeof placeId === "string") {
         goodPlaceId = placeId;
     } else {
-        return "placeId non valido"; // ParsedQs o undefined
+        return "placeId non valido";
     }
 
-    if (!name || name.trim().length === 0) return "Nome mancante";
-    if (name.length < 3) return "Nome troppo corto";
-    if (name.length > 100) return "Nome troppo lungo";
+    const baseError = validatePlaceBase(
+        name,
+        description,
+        categories,
+        location,
+        isFree,
+        images
+    );
 
-    // Validazione categories
-    if (!categories || !Array.isArray(categories) || categories.length === 0)
-        return "Categorie non valide";
-    for (const cat of categories) {
-        if (typeof cat !== "string" || cat.trim().length === 0)
-            return "Ogni categoria deve essere una stringa non vuota";
-    }
+    if (baseError) return baseError;
 
-    // Validazione coordinate
-    if (
-        !location ||
-        typeof location.lat === "undefined" ||
-        typeof location.lon === "undefined" ||
-        isNaN(Number(location.lat)) ||
-        isNaN(Number(location.lon))
-    ) {
-        return "Coordinate non valide";
-    }
-
-    if (typeof isFree !== "boolean") return "isFree deve essere booleano";
-
-    if (description && description.length < 10)
-        return "Descrizione troppo corta";
-    if (description && description.length > 500)
-        return "Descrizione troppo lunga";
-
-    // Verifica che place esista e abbia coordinate assegnate
     const place = await Place.findById(goodPlaceId).exec();
     if (!place) return "Luogo non trovato";
-
-    // Validazioni per immagini Base64
-    if (images) {
-        if (!Array.isArray(images)) return "Images deve essere un array";
-        if (images.length > 10) return "Massimo 10 immagini per luogo";
-
-        for (const img of images) {
-            if (typeof img !== "string") return "Immagini non valide";
-            // controllo base se sembra Base64 (non perfetto ma sufficiente per progetto)
-            if (!/^data:image\/(png|jpeg|jpg|gif);base64,/.test(img))
-                return "Formato immagine non valido";
-        }
-    }
 
     return null;
 }
