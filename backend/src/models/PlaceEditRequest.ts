@@ -5,8 +5,11 @@ const PlaceEditRequestSchema = new Schema(
         placeId: {
             type: Schema.Types.ObjectId,
             ref: "Place",
-            required: true,
+            required: function() {
+                return !this.isNewPlace; // richiesto solo se non è un nuovo luogo
+            }
         },
+        
         userId: {
             type: Schema.Types.ObjectId,
             ref: "User",
@@ -17,6 +20,11 @@ const PlaceEditRequestSchema = new Schema(
         proposedChanges: {
             type: Object,
             required: true,
+        },
+
+        isNewPlace: {
+            type: Boolean,
+            default: false,
         },
 
         status: {

@@ -1,7 +1,8 @@
 import { InferSchemaType, Schema, model } from "mongoose";
 
 const PlaceSchema = new Schema({
-    name: { type: String, required: true },
+    name: {type: String, required: true},
+    normalizedName: {type: String, index: true},
     description: String,
     categories: { type: [String], required: true },
     location: {
