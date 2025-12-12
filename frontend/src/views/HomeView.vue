@@ -10,6 +10,7 @@ import {
     DrawerDescription,
     DrawerTrigger,
 } from "../components/ui/drawer";
+import { getUser } from "../lib/auth";
 </script>
 
 <template>
