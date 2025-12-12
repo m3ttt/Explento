@@ -6,12 +6,24 @@ import LoginView from "../views/LoginView.vue";
 import LogoutView from "../views/LogoutView.vue";
 import RegisterView from "../views/RegisterView.vue";
 import MeView from "../views/MeView.vue";
+import HeatmapMissions from "../views/HeatmapMissions.vue";
+import OperatorRequests from "../views/OperatorRequests.vue";
 
 const routes = [
     { path: "/", component: HomeView, meta: { userAuth: true } },
     {
         path: "/operator",
         component: OperatorView,
+        meta: { operatorAuth: true },
+    },
+    {
+        path: "/operator/heatmap",
+        component: HeatmapMissions,
+        meta: { operatorAuth: true },
+    },
+    {
+        path: "/operator/requests",
+        component: OperatorRequests,
         meta: { operatorAuth: true },
     },
     { path: "/login", component: LoginView },

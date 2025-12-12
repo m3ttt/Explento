@@ -21,4 +21,4 @@ const MissionSchema = new Schema({
 export type MissionType = InferSchemaType<typeof MissionSchema>;
 
 // Modello Mongoose
-export default model("Mission", MissionSchema);
+export const Mission =  model("Mission", MissionSchema);
