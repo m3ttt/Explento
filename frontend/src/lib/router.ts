@@ -4,6 +4,8 @@ import HomeView from "../views/HomeView.vue";
 import { checkAuth } from "./auth";
 import LoginView from "../views/LoginView.vue";
 import LogoutView from "../views/LogoutView.vue";
+import RegisterView from "../views/RegisterView.vue";
+import MeView from "../views/MeView.vue";
 
 const routes = [
     { path: "/", component: HomeView, meta: { userAuth: true } },
@@ -13,7 +15,9 @@ const routes = [
         meta: { operatorAuth: true },
     },
     { path: "/login", component: LoginView },
+    { path: "/register", component: RegisterView },
     { path: "/logout", component: LogoutView, meta: { userAuth: true } },
+    { path: "/me", component: MeView, meta: { userAuth: true } },
 ];
 
 export const router = createRouter({
@@ -23,7 +27,10 @@ export const router = createRouter({
 
 router.beforeEach(async (to, _, next) => {
     // Redirect utente se prova a fare /login ma autenticato
-    if (to.path == "/login" && (await checkAuth())) {
+    if (
+        (to.path == "/login" || to.path == "/register") &&
+        (await checkAuth())
+    ) {
         return next("/");
     }
 

@@ -4,10 +4,16 @@
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
   ],
-    "compilerOptions": {
-    "baseUrl": ".",
+  "compilerOptions": {
+    "moduleResolution": "node",
     "paths": {
       "@/*": ["./src/*"]
     }
-  }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts", // Ensure declaration files are included
+    "src/**/*.tsx",
+    "src/**/*.vue"   // Ensure vue files are included
+  ]
 }

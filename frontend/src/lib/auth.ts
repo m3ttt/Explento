@@ -76,3 +76,33 @@ export async function login(
 export async function logout() {
     localStorage.clear();
 }
+
+export async function register(
+    username: string,
+    password: string,
+    email: string,
+    name: string,
+    surname: string,
+): Promise<{ error: boolean }> {
+    const resp = await fetch(`${API_ENDPOINT}/auth/register`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            username: username,
+            password: password,
+            surname: surname,
+            name: name,
+            email: email,
+        }),
+    });
+
+    console.log(await resp.json());
+
+    if (resp.status != 200) {
+        return { error: true };
+    }
+
+    return { error: false };
+}

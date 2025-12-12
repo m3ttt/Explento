@@ -1,29 +1,39 @@
-<template>
-    <div ref="mapContainer" class="w-full h-full z-0"></div>
-</template>
-
 <script>
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Fix per le icone che a volte scompaiono in build (opzionale ma consigliato)
+// Fix per le icone che a volte scompaiono in build
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
+
 let DefaultIcon = L.icon({
     iconUrl: icon,
     shadowUrl: iconShadow,
     iconSize: [25, 41],
     iconAnchor: [12, 41],
 });
+
 L.Marker.prototype.options.icon = DefaultIcon;
 
 export default {
     name: "HomeMap",
-    // Variabile per tenere l'istanza della mappa
     data() {
         return {
             map: null,
         };
+    },
+    methods: {
+        flyToLocation(lat, lng) {
+            if (!this.map || !this.markersLayer) return;
+
+            this.markersLayer.clearLayers();
+
+            L.marker([lat, lng]).addTo(this.markersLayer);
+
+            this.map.flyTo([lat, lng], 16, {
+                duration: 1.5,
+            });
+        },
     },
     mounted() {
         let minZoom = 13;
@@ -34,19 +44,20 @@ export default {
             zoom: minZoom,
             minZoom: minZoom,
             maxBoundsViscosity: 1.0,
-            zoomControl: false, // CONSIGLIO: Nascondi lo zoom default se il div rosso ci finisce sopra
+            // zoomControl: false,
         });
+
+        this.map.attributionControl.setPrefix("");
 
         this.map.dragging.disable();
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             subdomains: ["a", "b", "c"],
             // Importante: sposta il copyright in alto se il div rosso copre il basso
-            attributionControl: false,
+            attributionControl: true,
         }).addTo(this.map);
 
-        // Riaggiungi l'attribuzione in alto a destra se serve, per non coprirla col rosso
-        L.control.attribution({ position: "topright" }).addTo(this.map);
+        this.markersLayer = L.layerGroup().addTo(this.map);
 
         const initialVisibleBounds = this.map.getBounds();
         let firstZoom = true;
@@ -67,6 +78,7 @@ export default {
             }
         });
     },
+
     // Importante: distruggi la mappa quando il componente viene smontato
     beforeUnmount() {
         if (this.map) {
@@ -75,3 +87,7 @@ export default {
     },
 };
 </script>
+
+<template>
+    <div ref="mapContainer" class="w-full h-full z-0"></div>
+</template>
