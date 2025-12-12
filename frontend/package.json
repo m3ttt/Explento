@@ -16,6 +16,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "leaflet": "^1.9.4",
+    "leaflet.heat": "^0.2.0",
     "lucide-vue-next": "^0.556.0",
     "reka-ui": "^2.6.1",
     "tailwind-merge": "^3.4.0",

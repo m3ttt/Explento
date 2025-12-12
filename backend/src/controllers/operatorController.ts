@@ -45,19 +45,39 @@ export const getAllPlaceEdits = async (
     req: OperatorAuthRequest,
     resp: Response,
 ) => {
-    const { placeId } = req.query;
+    const { placeId, status, isNewPlace } = req.query;
 
-    let reqs;
-    if (placeId != "") {
-        reqs = await PlaceEditRequest.find({ placeId: placeId });
-    } else {
-        reqs = await PlaceEditRequest.find();
+    let query: Record<string, any> = {};
+
+    // filtro ID luogo
+    if (placeId) query.placeId = placeId;
+
+    // filtro stato
+    if (status) {
+        const allowedStatuses = ["pending", "approved", "rejected"];
+        if (!allowedStatuses.includes(status as string)) {
+            return resp.status(400).json({ message: "Stato non valido per il filtro" });
+        }
+        query.status = status;
     }
+
+    // filtro nuovo luogo
+    if (isNewPlace !== undefined) {
+        if (isNewPlace !== "true" && isNewPlace !== "false") {
+            return resp
+                .status(400)
+                .json({ message: "Valore non valido per isNewPlace (usa true/false)" });
+        }
+
+        query.isNewPlace = isNewPlace === "true";
+    }
+
+    const reqs = await PlaceEditRequest.find(query);
 
     return resp.status(200).json(reqs);
 };
 
-export const getPlaceEdits = async (
+export const getPlaceEditsById = async (
     req: OperatorAuthRequest,
     res: Response,
 ) => {
@@ -103,6 +123,11 @@ export const updatePlaceEdits = async (
         return resp
             .status(404)
             .json({ message: "PlaceEditRequest non trovata" });
+    }
+
+    // Controllo se la richiesta è già stata approvata o rifiutata
+    if (editRequest.status === "approved" || editRequest.status === "rejected") {
+        return resp.status(400).json({ message: `Impossibile modificare una richiesta già ${editRequest.status}` });
     }
 
     editRequest.status = status;

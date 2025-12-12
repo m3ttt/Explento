@@ -4,13 +4,14 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import {
     loginOperator,
     getAllPlaceEdits,
-    getPlaceEdits,
+    getPlaceEditsById,
     updatePlaceEdits,
 } from "../controllers/operatorController.js";
 
 export interface OperatorAuthRequest extends Request {
     operator?: OperatorType & Document;
 }
+
 export async function operatorAuthenticate(
     req: OperatorAuthRequest,
     res: Response,
@@ -63,10 +64,10 @@ const router = express.Router();
 router.post("/login", loginOperator);
 
 // Da qui in poi richieste autenticate
-router.use(operatorAuthenticate);
+// router.use(operatorAuthenticate);
 
 router.get("/place_edit_requests", getAllPlaceEdits);
-router.get("/place_edit_requests/:id", getPlaceEdits);
-router.post("/place_edit_requests/:id", updatePlaceEdits);
+router.get("/place_edit_requests/:id", getPlaceEditsById);
+router.patch("/place_edit_requests/:id", updatePlaceEdits);
 
 export default router;
