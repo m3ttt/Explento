@@ -89,7 +89,7 @@ async function handleRegister() {
                 <CardContent class="grid gap-4">
                     <div
                         v-if="errorMessage"
-                        class="p-3 text-sm text-destructive bg-destructive rounded-md border border-destructive text-center"
+                        class="p-3 text-sm font-semibold bg-destructive rounded-md border border-destructive text-center"
                     >
                         {{ errorMessage }}
                     </div>
