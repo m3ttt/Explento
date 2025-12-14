@@ -60,7 +60,7 @@ async function triggerLogin() {
                 <CardContent class="grid gap-4">
                     <div
                         v-if="error"
-                        class="p-3 text-sm text-destructive bg-destructive rounded-md border border-destructive text-center"
+                        class="p-3 text-sm text-background font-semibold bg-destructive rounded-md border border-destructive text-center"
                     >
                         {{ error }}
                     </div>
