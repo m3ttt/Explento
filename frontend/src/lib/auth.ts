@@ -4,7 +4,7 @@ import { UserSchemaZod, type User } from "./type";
 let user: User | null = null;
 let isChecking = false;
 
-export async function checkAuth() {
+export async function checkAuth(): Promise<User | null> {
     const token = localStorage.getItem("token");
 
     if (!token) return null;
@@ -42,10 +42,6 @@ export async function checkAuth() {
     return user;
 }
 
-export function getUser() {
-    return user;
-}
-
 export async function login(
     username: string,
     password: string,
@@ -74,6 +70,7 @@ export async function login(
 }
 
 export async function logout() {
+    user = null;
     localStorage.clear();
 }
 
