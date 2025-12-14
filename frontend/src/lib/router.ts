@@ -3,9 +3,7 @@ import OperatorView from "../views/OperatorView.vue";
 import HomeView from "../views/HomeView.vue";
 import { checkAuth } from "./auth";
 import LoginView from "../views/LoginView.vue";
-import LogoutView from "../views/LogoutView.vue";
 import RegisterView from "../views/RegisterView.vue";
-import MeView from "../views/MeView.vue";
 
 const routes = [
     { path: "/", component: HomeView, meta: { userAuth: true } },
@@ -16,8 +14,6 @@ const routes = [
     },
     { path: "/login", component: LoginView },
     { path: "/register", component: RegisterView },
-    { path: "/logout", component: LogoutView, meta: { userAuth: true } },
-    { path: "/me", component: MeView, meta: { userAuth: true } },
 ];
 
 export const router = createRouter({
@@ -44,6 +40,7 @@ router.beforeEach(async (to, _, next) => {
     }
     if (to.meta.operatorAuth) {
         // TODO: Operator auth middleware
+        // Per ora fa passare tutto
         return next();
     }
     return next();

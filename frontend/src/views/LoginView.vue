@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { ref } from "vue";
 import { Button } from "../components/ui/button";
 import {
     Card,
@@ -11,20 +10,27 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+
 import { login } from "../lib/auth";
+
 import { useRouter } from "vue-router";
+import { ref } from "vue";
 
 const router = useRouter();
 
-const username = ref("");
-const password = ref("");
+const formData = ref({
+    username: "",
+    password: "",
+});
+
 const loading = ref(false);
 const error = ref("");
 
 async function triggerLogin() {
     loading.value = true;
     error.value = "";
-    const res = await login(username.value, password.value);
+
+    const res = await login(formData.value.username, formData.value.password);
 
     if (res.error) {
         error.value = "Login fallito. Username o password errati";
@@ -40,13 +46,11 @@ async function triggerLogin() {
 
 <template>
     <div
-        class="w-full h-screen flex items-center justify-center bg-muted/20 px-4"
+        class="w-full h-screen flex items-center justify-center bg-background px-4"
     >
-        <Card class="w-full max-w-sm shadow-lg border-muted-foreground/10">
+        <Card class="w-full max-w-sm shadow-lg">
             <CardHeader class="space-y-1 text-center">
-                <CardTitle class="text-2xl font-bold tracking-tight"
-                    >Accesso</CardTitle
-                >
+                <CardTitle class="text-2xl font-bold">Accesso</CardTitle>
                 <CardDescription>
                     Inserisci le tue credenziali per entrare in Explento
                 </CardDescription>
@@ -56,7 +60,7 @@ async function triggerLogin() {
                 <CardContent class="grid gap-4">
                     <div
                         v-if="error"
-                        class="p-3 text-sm text-destructive bg-destructive/10 rounded-md border border-destructive/20 text-center"
+                        class="p-3 text-sm text-destructive bg-destructive rounded-md border border-destructive text-center"
                     >
                         {{ error }}
                     </div>
@@ -66,7 +70,7 @@ async function triggerLogin() {
                         <Input
                             id="username"
                             type="text"
-                            v-model="username"
+                            v-model="formData.username"
                             placeholder="Test"
                             required
                             class="bg-background"
@@ -81,7 +85,7 @@ async function triggerLogin() {
                             id="password"
                             type="password"
                             placeholder="Test"
-                            v-model="password"
+                            v-model="formData.password"
                             required
                             class="bg-background"
                         />
@@ -120,7 +124,7 @@ async function triggerLogin() {
                         Non hai ancora un account?
                         <router-link
                             to="/register"
-                            class="font-medium text-primary underline underline-offset-4 hover:text-primary/80 transition-colors"
+                            class="font-medium text-primary underline underline-offset-4 hover:text-primary/70"
                         >
                             Registrati ora
                         </router-link>

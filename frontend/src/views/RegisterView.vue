@@ -16,12 +16,14 @@ import { login, register } from "../lib/auth";
 
 const router = useRouter();
 
-const name = ref("");
-const surname = ref("");
-const username = ref("");
-const email = ref("");
-const password = ref("");
-const confirmPassword = ref("");
+const formData = ref({
+    name: "",
+    surname: "",
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+});
 
 const isLoading = ref(false);
 const errorMessage = ref("");
@@ -29,12 +31,12 @@ const errorMessage = ref("");
 async function handleRegister() {
     errorMessage.value = "";
 
-    if (password.value !== confirmPassword.value) {
+    if (formData.value.password !== formData.value.confirmPassword) {
         errorMessage.value = "Le password non coincidono";
         return;
     }
 
-    if (password.value.length < 8) {
+    if (formData.value.password.length < 8) {
         errorMessage.value = "La password deve essere di almeno 8 caratteri";
         return;
     }
@@ -42,36 +44,40 @@ async function handleRegister() {
     isLoading.value = true;
 
     let err = await register(
-        username.value,
-        password.value,
-        email.value,
-        name.value,
-        surname.value,
+        formData.value.username,
+        formData.value.password,
+        formData.value.email,
+        formData.value.name,
+        formData.value.surname,
     );
 
     if (err.error) {
         errorMessage.value = "Registrazione fallita";
+        isLoading.value = false;
         return;
     }
 
-    err = await login(username.value, password.value);
+    // Login automatico dopo la registrazione
+    err = await login(formData.value.username, formData.value.password);
 
     if (err.error) {
+        isLoading.value = false;
         router.push("/login");
         return;
     }
 
+    isLoading.value = false;
     router.push("/");
 }
 </script>
 
 <template>
     <div
-        class="w-full h-screen flex items-center justify-center bg-muted/20 px-4"
+        class="w-full h-screen flex items-center justify-center bg-background px-4"
     >
-        <Card class="w-full max-w-md shadow-lg border-muted-foreground/10">
+        <Card class="w-full max-w-md shadow-lg">
             <CardHeader class="space-y-1 text-center">
-                <CardTitle class="text-2xl font-bold tracking-tight"
+                <CardTitle class="text-2xl font-bold"
                     >Crea un account</CardTitle
                 >
                 <CardDescription>
@@ -83,7 +89,7 @@ async function handleRegister() {
                 <CardContent class="grid gap-4">
                     <div
                         v-if="errorMessage"
-                        class="p-3 text-sm text-destructive bg-destructive/10 rounded-md border border-destructive/20 text-center"
+                        class="p-3 text-sm text-destructive bg-destructive rounded-md border border-destructive text-center"
                     >
                         {{ errorMessage }}
                     </div>
@@ -93,7 +99,7 @@ async function handleRegister() {
                             <Label for="name">Nome</Label>
                             <Input
                                 id="name"
-                                v-model="name"
+                                v-model="formData.name"
                                 placeholder="Mario"
                                 required
                                 class="bg-background"
@@ -103,7 +109,7 @@ async function handleRegister() {
                             <Label for="surname">Cognome</Label>
                             <Input
                                 id="surname"
-                                v-model="surname"
+                                v-model="formData.surname"
                                 placeholder="Rossi"
                                 required
                                 class="bg-background"
@@ -115,7 +121,7 @@ async function handleRegister() {
                         <Label for="username">Username</Label>
                         <Input
                             id="username"
-                            v-model="username"
+                            v-model="formData.username"
                             placeholder="mariorossi88"
                             required
                             class="bg-background"
@@ -127,7 +133,7 @@ async function handleRegister() {
                         <Input
                             id="email"
                             type="email"
-                            v-model="email"
+                            v-model="formData.email"
                             placeholder="mario@esempio.com"
                             required
                             class="bg-background"
@@ -139,7 +145,7 @@ async function handleRegister() {
                         <Input
                             id="password"
                             type="password"
-                            v-model="password"
+                            v-model="formData.password"
                             required
                             class="bg-background"
                         />
@@ -150,7 +156,7 @@ async function handleRegister() {
                         <Input
                             id="confirm-password"
                             type="password"
-                            v-model="confirmPassword"
+                            v-model="formData.confirmPassword"
                             required
                             class="bg-background"
                         />
@@ -189,7 +195,7 @@ async function handleRegister() {
                         Hai già un account?
                         <router-link
                             to="/login"
-                            class="font-medium text-primary underline underline-offset-4 hover:text-primary/80 transition-colors"
+                            class="font-medium text-primary underline underline-offset-4 hover:text-primary/70"
                         >
                             Accedi
                         </router-link>

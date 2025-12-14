@@ -1,115 +1,95 @@
 <script setup lang="ts">
-import HomeMap from "../components/HomeMap.vue";
-import { API_ENDPOINT } from "../lib/config";
-import {
-    onBeforeMount,
-    onBeforeUnmount,
-    ref,
-    computed,
-    onActivated,
-} from "vue"; // Import computed
+import Map from "@/components/Map.vue";
 import PlaceCard from "../components/PlaceCard.vue";
 import Navbar from "../components/Navbar.vue";
-import { checkAuth, logout } from "@/lib/auth";
-import { createAvatar } from "@dicebear/core";
-import { initials } from "@dicebear/collection";
-import { User } from "@/lib/type";
-import { useRouter } from "vue-router";
+import AddPlace from "@/components/AddPlace.vue";
+import UserProfile from "@/components/UserProfile.vue";
 
-let places = ref([]); // Initialize as empty array
+import { onBeforeMount, ref } from "vue";
+import z from "zod";
+
+import { API_ENDPOINT } from "../lib/config";
+import { checkAuth } from "@/lib/auth";
+import { User } from "@/lib/types/user";
+import { Place, PlaceSchema } from "@/lib/types/place";
+
+// I luoghi da visualizzare come consigliati
+let places = ref<Place[]>([]);
+
+// Riferimento alla mappa
 const mapRef = ref();
-const router = useRouter();
 
+// Tab nella barra di navigazione attiva
 const activeTab = ref("home");
 
+// Utente loggato
 let user = ref<User | null>(null);
 
-let radius = ref(3);
+// Funzione che usa le WEBAPI per ottenere la posizione GPS
+const getPosition = (): Promise<GeolocationPosition> => {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error("Geolocation non supportata dal browser"));
+        } else {
+            navigator.geolocation.getCurrentPosition(
+                (position: GeolocationPosition) => resolve(position),
+                (error: GeolocationPositionError) => reject(error),
+            );
+        }
+    });
+};
 
+// Esecuzione prima che carichi il componente
 onBeforeMount(async () => {
+    // Imposto l'utente a quello loggato
     user.value = await checkAuth();
 
-    // Coordinate di Default (Stazione di Trento)
+    // TODO: Rimuovere in production
+    // Coordinate default in caso di errore GPS (Stazione di Trento)
     const DEFAULT_LAT = 46.0726;
     const DEFAULT_LON = 11.1191;
 
-    const getPosition = (): Promise<GeolocationPosition> => {
-        return new Promise((resolve, reject) => {
-            if (!navigator.geolocation) {
-                reject(new Error("Geolocation non supportata dal browser"));
-            } else {
-                navigator.geolocation.getCurrentPosition(
-                    (position: GeolocationPosition) => resolve(position),
-                    (error: GeolocationPositionError) => reject(error),
-                );
-            }
-        });
-    };
+    let lat = DEFAULT_LAT;
+    let lon = DEFAULT_LON;
 
     try {
-        let lat = DEFAULT_LAT;
-        let lon = DEFAULT_LON;
+        const position = await getPosition();
+        lat = position.coords.latitude;
+        lon = position.coords.longitude;
+    } catch (_) {}
 
-        try {
-            const position = await getPosition();
-            lat = position.coords.latitude;
-            lon = position.coords.longitude;
-        } catch (geoError) {
-            console.warn(
-                "Impossibile ottenere la posizione, uso Trento come fallback.",
-                geoError,
-            );
-        }
+    // Richiediamo i luoghi vicini
+    const res = await fetch(
+        `${API_ENDPOINT}/places?lat=${lat}&lon=${lon}&radius=3`,
+    );
 
-        const res = await fetch(
-            `${API_ENDPOINT}/places?lat=${lat}&lon=${lon}&radius=${radius.value}`,
-        );
-
-        if (res.status === 200) {
-            places.value = await res.json();
-            console.log(places.value);
-        } else {
-            places.value = [];
-        }
-    } catch (e) {
-        console.error("Errore generale o di rete:", e);
+    if (!res.ok) {
         places.value = [];
+        return;
     }
+
+    const data = await res.json();
+
+    // Faccio il parsing dei dati
+    const parsed = await z.array(PlaceSchema).safeParseAsync(data);
+
+    if (!parsed.success) {
+        places.value = [];
+        console.error(parsed.error);
+        return;
+    }
+
+    places.value = parsed.data;
 });
-
-const avatar = computed(() => {
-    if (!user.value) return "";
-
-    return createAvatar(initials, {
-        seed: user.value.username,
-        size: 128,
-    }).toDataUri();
-});
-
-function handlePlaceClick(place: any) {
-    if (!place.location) return;
-    mapRef.value.flyToLocation(place.location.lat, place.location.lon);
-}
-
-function handleTabChange(tabName: string) {
-    activeTab.value = tabName;
-}
-
-const handleLogout = async () => {
-    user.value = null;
-
-    await logout();
-
-    router.push("/login");
-};
 </script>
 
 <template>
     <div class="relative w-full h-screen overflow-hidden">
         <div class="absolute inset-0 z-0">
-            <HomeMap ref="mapRef" />
+            <Map ref="mapRef" />
         </div>
 
+        <!-- In modo da impostare la navbar + tab sopra tutto -->
         <div
             class="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center pointer-events-none gap-3 p-8"
         >
@@ -120,56 +100,42 @@ const handleLogout = async () => {
                 <div class="flex gap-3 w-full">
                     <PlaceCard
                         v-for="item in places"
-                        :key="item.id"
+                        :key="item._id"
                         :place="item"
-                        @click="handlePlaceClick(item)"
+                        @click="
+                            mapRef.flyToLocation(
+                                item.location.lat,
+                                item.location.lon,
+                            )
+                        "
                     />
                 </div>
             </div>
 
-            <div
-                v-else-if="activeTab === 'profile' && user"
+            <UserProfile
                 class="w-full max-w-md pointer-events-auto pb-6"
-            >
-                <div
-                    class="bg-background rounded-2xl p-6 shadow-xl border w-full h-64 flex flex-col items-center justify-center gap-4"
-                >
-                    <div
-                        class="w-20 h-20 bg-muted rounded-full flex items-center justify-center"
-                    >
-                        <img :src="avatar" alt="Avatar" class="rounded-full" />
-                    </div>
-                    <div class="text-center">
-                        <h2 class="text-xl font-bold">
-                            {{ user.username }}
-                        </h2>
-                        <p class="text-muted-foreground text-sm">
-                            {{ user.name }} {{ user.surname }}
-                        </p>
-                    </div>
-                    <button
-                        class="text-sm text-primary underline"
-                        @click="handleLogout"
-                    >
-                        <p>Logout</p>
-                    </button>
-                </div>
-            </div>
+                :user="user"
+                v-else-if="activeTab === 'profile'"
+            />
 
-            <div
+            <AddPlace
+                class="w-full max-w-md pointer-events-auto pb-6"
                 v-else-if="activeTab === 'add'"
-                class="w-full max-w-md pointer-events-auto pb-6"
-            >
-                <div class="bg-background rounded-2xl p-6 w-full">
-                    <h1>Add new Place</h1>
-                </div>
-            </div>
+            />
 
-            <Navbar :activeTab="activeTab" @change-tab="handleTabChange" />
+            <Navbar
+                :activeTab="activeTab"
+                @change-tab="
+                    (tabName: string) => {
+                        activeTab = tabName;
+                    }
+                "
+            />
         </div>
     </div>
 </template>
 
+<!-- Togliere le barre di scorrimento -->
 <style scoped>
 .no-scrollbar::-webkit-scrollbar {
     display: none;

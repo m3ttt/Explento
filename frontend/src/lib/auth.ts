@@ -1,12 +1,16 @@
 import { API_ENDPOINT } from "./config";
-import { UserSchemaZod, type User } from "./type";
+import { UserSchema, type User } from "../lib/types/user";
 
+// Variabile che rappresenta l'utente
 let user: User | null = null;
+
+// Controlliamo se abbiamo un check già in corso
 let isChecking = false;
 
 export async function checkAuth(): Promise<User | null> {
     const token = localStorage.getItem("token");
 
+    // No JWT Token, no user
     if (!token) return null;
 
     if (user) return user;
@@ -14,23 +18,24 @@ export async function checkAuth(): Promise<User | null> {
 
     isChecking = true;
 
+    // Provo a fare /me con il token
     const resp = await fetch(`${API_ENDPOINT}/me`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
     });
 
-    if (resp.status != 200) {
+    if (!resp.ok) {
         isChecking = false;
         user = null;
         return null;
     }
+    const data = await resp.json();
 
-    const convertionResp = await UserSchemaZod.safeParseAsync(
-        await resp.json(),
-    );
+    const convertionResp = await UserSchema.safeParseAsync(data);
 
-    if (convertionResp.error) {
+    if (!convertionResp.success) {
+        console.error(convertionResp.error);
         isChecking = false;
         user = null;
         return null;
@@ -57,7 +62,7 @@ export async function login(
         }),
     });
 
-    if (resp.status != 200) {
+    if (!resp.ok) {
         return { error: true };
     }
 
@@ -70,8 +75,9 @@ export async function login(
 }
 
 export async function logout() {
+    // Imposto user a null per farlo sloggare
     user = null;
-    localStorage.clear();
+    localStorage.setItem("token", "");
 }
 
 export async function register(
@@ -95,9 +101,7 @@ export async function register(
         }),
     });
 
-    console.log(await resp.json());
-
-    if (resp.status != 200) {
+    if (!resp.ok) {
         return { error: true };
     }
 

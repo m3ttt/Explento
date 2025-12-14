@@ -2,18 +2,10 @@
 import { computed } from "vue";
 import { MapPin } from "lucide-vue-next";
 import { Badge } from "@/components/ui/badge";
-
-interface Place {
-    id: number | string;
-    name: string;
-    categories: string;
-    distance: number;
-    [key: string]: any;
-}
+import { Place } from "@/lib/types/place";
 
 const props = defineProps<{
     place: Place;
-    distance?: string | number;
 }>();
 
 const parsedCategories = computed(() => {
