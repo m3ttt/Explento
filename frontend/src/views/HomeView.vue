@@ -1,33 +1,32 @@
 <script setup lang="ts">
 import HomeMap from "../components/HomeMap.vue";
 import { API_ENDPOINT } from "../lib/config";
-import { onBeforeMount, ref } from "vue";
+import {
+    onBeforeMount,
+    onBeforeUnmount,
+    ref,
+    computed,
+    onActivated,
+} from "vue"; // Import computed
 import PlaceCard from "../components/PlaceCard.vue";
 import Navbar from "../components/Navbar.vue";
-import { getUser } from "@/lib/auth";
+import { checkAuth, logout } from "@/lib/auth";
 import { createAvatar } from "@dicebear/core";
 import { initials } from "@dicebear/collection";
+import { User } from "@/lib/type";
+import { useRouter } from "vue-router";
 
-// Stato per i dati
-let places = ref();
+let places = ref([]); // Initialize as empty array
 const mapRef = ref();
+const router = useRouter();
 
-// Stato per la navigazione: 'home' oppure 'profile'
 const activeTab = ref("home");
 
-const user = getUser();
-
-function handlePlaceClick(place: any) {
-    if (!place.location) return;
-    mapRef.value.flyToLocation(place.location.lat, place.location.lon);
-}
-
-// Funzione per gestire il cambio tab dalla Navbar
-function handleTabChange(tabName: string) {
-    activeTab.value = tabName;
-}
+let user = ref<User | null>(null);
 
 onBeforeMount(async () => {
+    user.value = await checkAuth();
+
     try {
         const res = await fetch(`${API_ENDPOINT}/places`);
         if (res.status === 200) {
@@ -41,10 +40,31 @@ onBeforeMount(async () => {
     }
 });
 
-const avatar = createAvatar(initials, {
-    seed: user.username + user.name + user.surname,
-    size: 128,
-}).toDataUri();
+const avatar = computed(() => {
+    if (!user.value) return "";
+
+    return createAvatar(initials, {
+        seed: user.value.username,
+        size: 128,
+    }).toDataUri();
+});
+
+function handlePlaceClick(place: any) {
+    if (!place.location) return;
+    mapRef.value.flyToLocation(place.location.lat, place.location.lon);
+}
+
+function handleTabChange(tabName: string) {
+    activeTab.value = tabName;
+}
+
+const handleLogout = async () => {
+    user.value = null;
+
+    await logout();
+
+    router.push("/login");
+};
 </script>
 
 <template>
@@ -71,7 +91,7 @@ const avatar = createAvatar(initials, {
             </div>
 
             <div
-                v-else-if="activeTab === 'profile'"
+                v-else-if="activeTab === 'profile' && user"
                 class="w-full max-w-md pointer-events-auto pb-6"
             >
                 <div
@@ -90,8 +110,11 @@ const avatar = createAvatar(initials, {
                             {{ user.name }} {{ user.surname }}
                         </p>
                     </div>
-                    <button class="text-sm text-primary underline">
-                        <RouterLink to="/logout"> Logout </RouterLink>
+                    <button
+                        class="text-sm text-primary underline"
+                        @click="handleLogout"
+                    >
+                        <p>Logout</p>
                     </button>
                 </div>
             </div>
