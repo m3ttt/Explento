@@ -5,6 +5,7 @@ interface Place {
     id: number | string;
     name: string;
     categories: string;
+    distance: number;
     [key: string]: any;
 }
 
@@ -35,7 +36,7 @@ defineProps<{
                     class="flex items-center text-xs text-muted-foreground mt-1"
                 >
                     <MapPin class="w-3 h-3 mr-1" />
-                    <span>{{ distance || "1 km" }}</span>
+                    <span>{{ place.distance.toFixed(1) || "--" }} km</span>
                 </div>
             </div>
         </div>

@@ -24,18 +24,55 @@ const activeTab = ref("home");
 
 let user = ref<User | null>(null);
 
+let radius = ref(3);
+
 onBeforeMount(async () => {
     user.value = await checkAuth();
 
+    // Coordinate di Default (Stazione di Trento)
+    const DEFAULT_LAT = 46.0726;
+    const DEFAULT_LON = 11.1191;
+
+    const getPosition = (): Promise<GeolocationPosition> => {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error("Geolocation non supportata dal browser"));
+            } else {
+                navigator.geolocation.getCurrentPosition(
+                    (position: GeolocationPosition) => resolve(position),
+                    (error: GeolocationPositionError) => reject(error),
+                );
+            }
+        });
+    };
+
     try {
-        const res = await fetch(`${API_ENDPOINT}/places`);
+        let lat = DEFAULT_LAT;
+        let lon = DEFAULT_LON;
+
+        try {
+            const position = await getPosition();
+            lat = position.coords.latitude;
+            lon = position.coords.longitude;
+        } catch (geoError) {
+            console.warn(
+                "Impossibile ottenere la posizione, uso Trento come fallback.",
+                geoError,
+            );
+        }
+
+        const res = await fetch(
+            `${API_ENDPOINT}/places?lat=${lat}&lon=${lon}&radius=${radius.value}`,
+        );
+
         if (res.status === 200) {
             places.value = await res.json();
+            console.log(places.value);
         } else {
             places.value = [];
         }
     } catch (e) {
-        console.error(e);
+        console.error("Errore generale o di rete:", e);
         places.value = [];
     }
 });
