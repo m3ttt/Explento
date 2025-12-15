@@ -132,6 +132,9 @@ export const updatePlaceEdits = async (
 
     editRequest.status = status;
 
+    // TODO: inserire operatore che ha accettato/rifiutato modifica
+    // editRequest.operatorId = req.operator._id;
+
     if (operatorComment) {
         editRequest.operatorComment = operatorComment;
     }
