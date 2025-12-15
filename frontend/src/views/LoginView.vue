@@ -48,7 +48,7 @@ async function triggerLogin() {
     <div
         class="w-full h-screen flex items-center justify-center bg-background px-4"
     >
-        <Card class="w-full max-w-sm shadow-lg">
+        <Card class="w-full max-w-sm shadow-lg border-0">
             <CardHeader class="space-y-1 text-center">
                 <CardTitle class="text-2xl font-bold">Accesso</CardTitle>
                 <CardDescription>

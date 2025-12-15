@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { logout } from "@/lib/auth";
-import type { User } from "@/lib/type";
+import type { User } from "@/lib/types/user";
 import { initials } from "@dicebear/collection";
 import { createAvatar } from "@dicebear/core";
+import { useColorMode } from "@vueuse/core";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 
@@ -29,7 +30,7 @@ const handleLogout = async () => {
 
 <template>
     <div
-        class="bg-background rounded-2xl p-6 shadow-xl border w-full h-64 flex flex-col items-center justify-center gap-4"
+        class="bg-background rounded-2xl p-6 shadow-xl w-full h-64 flex flex-col items-center justify-center gap-4"
     >
         <div
             class="w-20 h-20 bg-muted rounded-full flex items-center justify-center"

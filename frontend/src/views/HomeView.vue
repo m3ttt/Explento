@@ -9,9 +9,9 @@ import { onBeforeMount, ref } from "vue";
 import z from "zod";
 
 import { API_ENDPOINT } from "../lib/config";
-import { checkAuth } from "@/lib/auth";
 import { User } from "@/lib/types/user";
 import { Place, PlaceSchema } from "@/lib/types/place";
+import { getPosition } from "@/lib/position";
 
 // I luoghi da visualizzare come consigliati
 let places = ref<Place[]>([]);
@@ -22,45 +22,17 @@ const mapRef = ref();
 // Tab nella barra di navigazione attiva
 const activeTab = ref("home");
 
-// Utente loggato
-let user = ref<User | null>(null);
-
-// Funzione che usa le WEBAPI per ottenere la posizione GPS
-const getPosition = (): Promise<GeolocationPosition> => {
-    return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-            reject(new Error("Geolocation non supportata dal browser"));
-        } else {
-            navigator.geolocation.getCurrentPosition(
-                (position: GeolocationPosition) => resolve(position),
-                (error: GeolocationPositionError) => reject(error),
-            );
-        }
-    });
-};
+defineProps<{
+    currentUser: User;
+}>();
 
 // Esecuzione prima che carichi il componente
 onBeforeMount(async () => {
-    // Imposto l'utente a quello loggato
-    user.value = await checkAuth();
-
-    // TODO: Rimuovere in production
-    // Coordinate default in caso di errore GPS (Stazione di Trento)
-    const DEFAULT_LAT = 46.0726;
-    const DEFAULT_LON = 11.1191;
-
-    let lat = DEFAULT_LAT;
-    let lon = DEFAULT_LON;
-
-    try {
-        const position = await getPosition();
-        lat = position.coords.latitude;
-        lon = position.coords.longitude;
-    } catch (_) {}
+    const position = getPosition();
 
     // Richiediamo i luoghi vicini
     const res = await fetch(
-        `${API_ENDPOINT}/places?lat=${lat}&lon=${lon}&radius=3`,
+        `${API_ENDPOINT}/places?lat=${position.coords.latitude}&lon=${position.coords.longitude}&radius=3`,
     );
 
     if (!res.ok) {
@@ -114,7 +86,7 @@ onBeforeMount(async () => {
 
             <UserProfile
                 class="w-full max-w-md pointer-events-auto pb-6"
-                :user="user"
+                :user="currentUser"
                 v-else-if="activeTab === 'profile'"
             />
 
