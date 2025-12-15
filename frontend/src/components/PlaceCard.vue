@@ -21,7 +21,7 @@ const parsedCategories = computed(() => {
 
 <template>
     <div
-        class="relative flex flex-col w-48 h-32 p-3 rounded-2xl bg-background snap-center shrink-0 overflow-hidden group cursor-pointer transition-colors border"
+        class="relative flex flex-col w-48 h-32 p-3 rounded-2xl bg-background snap-center shrink-0 overflow-hidden group cursor-pointer transition-colors"
     >
         <div class="relative z-10 flex flex-col justify-between h-full">
             <div

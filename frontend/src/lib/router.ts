@@ -6,7 +6,12 @@ import LoginView from "../views/LoginView.vue";
 import RegisterView from "../views/RegisterView.vue";
 
 const routes = [
-    { path: "/", component: HomeView, meta: { userAuth: true } },
+    {
+        path: "/",
+        component: HomeView,
+        meta: { userAuth: true },
+        props: (route: any) => ({ currentUser: route.meta.currentUser }),
+    },
     {
         path: "/operator",
         component: OperatorView,
@@ -36,6 +41,8 @@ router.beforeEach(async (to, _, next) => {
         if (!user) {
             return next(`/login`);
         }
+
+        to.meta.currentUser = user;
         return next();
     }
     if (to.meta.operatorAuth) {
