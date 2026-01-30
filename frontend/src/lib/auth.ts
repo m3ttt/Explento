@@ -1,22 +1,17 @@
 import { API_ENDPOINT } from "./config";
 import { UserSchema, type User } from "../lib/types/user";
+import { ref, type Ref } from "vue";
 
 // Variabile che rappresenta l'utente
-let user: User | null = null;
+let user = ref<User | null>(null);
 
-// Controlliamo se abbiamo un check già in corso
-let isChecking = false;
+export async function checkAuth(): Promise<Ref<User | null>> {
+    user.value = null;
 
-export async function checkAuth(): Promise<User | null> {
     const token = localStorage.getItem("token");
 
     // No JWT Token, no user
-    if (!token) return null;
-
-    if (user) return user;
-    if (isChecking) return null;
-
-    isChecking = true;
+    if (!token) return user;
 
     // Provo a fare /me con il token
     const resp = await fetch(`${API_ENDPOINT}/me`, {
@@ -26,9 +21,7 @@ export async function checkAuth(): Promise<User | null> {
     });
 
     if (!resp.ok) {
-        isChecking = false;
-        user = null;
-        return null;
+        return user;
     }
     const data = await resp.json();
 
@@ -36,14 +29,10 @@ export async function checkAuth(): Promise<User | null> {
 
     if (!convertionResp.success) {
         console.error(convertionResp.error);
-        isChecking = false;
-        user = null;
-        return null;
+        return user;
     }
 
-    user = convertionResp.data;
-    isChecking = false;
-
+    user.value = convertionResp.data;
     return user;
 }
 
@@ -76,7 +65,7 @@ export async function login(
 
 export async function logout() {
     // Imposto user a null per farlo sloggare
-    user = null;
+    user.value = null;
     localStorage.setItem("token", "");
 }
 

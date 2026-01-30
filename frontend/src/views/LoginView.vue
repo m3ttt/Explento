@@ -18,6 +18,7 @@ import { ref } from "vue";
 
 const router = useRouter();
 
+// Dati del form di login
 const formData = ref({
     username: "",
     password: "",

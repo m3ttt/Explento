@@ -3,9 +3,10 @@ import Map from "@/components/Map.vue";
 import PlaceCard from "../components/PlaceCard.vue";
 import Navbar from "../components/Navbar.vue";
 import AddPlace from "@/components/AddPlace.vue";
+import AddPlaceError from "@/components/AddPlaceError.vue";
 import UserProfile from "@/components/UserProfile.vue";
 
-import { onBeforeMount, ref } from "vue";
+import { onBeforeMount, Ref, ref } from "vue";
 import z from "zod";
 
 import { API_ENDPOINT } from "../lib/config";
@@ -23,7 +24,7 @@ const mapRef = ref();
 const activeTab = ref("home");
 
 defineProps<{
-    currentUser: User;
+    currentUser: Ref<User | null>;
 }>();
 
 // Esecuzione prima che carichi il componente
@@ -92,7 +93,12 @@ onBeforeMount(async () => {
 
             <AddPlace
                 class="w-full max-w-md pointer-events-auto pb-6"
-                v-else-if="activeTab === 'add'"
+                v-else-if="activeTab === 'add' && currentUser.value.expert"
+            />
+
+            <AddPlaceError
+                class="w-full max-w-md pointer-events-auto pb-6"
+                v-else-if="activeTab === 'add' && !currentUser.value.expert"
             />
 
             <Navbar

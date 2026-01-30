@@ -27,18 +27,18 @@ export const router = createRouter({
 });
 
 router.beforeEach(async (to, _, next) => {
+    const user = await checkAuth();
+
+    // WARNING: Rimuovere in production
+    console.debug("ROUTER USER: " + JSON.stringify(user.value));
+
     // Redirect utente se prova a fare /login ma autenticato
-    if (
-        (to.path == "/login" || to.path == "/register") &&
-        (await checkAuth())
-    ) {
+    if ((to.path == "/login" || to.path == "/register") && user.value) {
         return next("/");
     }
 
     if (to.meta.userAuth) {
-        const user = await checkAuth();
-
-        if (!user) {
+        if (!user.value) {
             return next(`/login`);
         }
 
@@ -46,8 +46,6 @@ router.beforeEach(async (to, _, next) => {
         return next();
     }
     if (to.meta.operatorAuth) {
-        // TODO: Operator auth middleware
-        // Per ora fa passare tutto
         return next();
     }
     return next();
