@@ -3,21 +3,31 @@ import { logout } from "@/lib/auth";
 import type { User } from "@/lib/types/user";
 import { initials } from "@dicebear/collection";
 import { createAvatar } from "@dicebear/core";
-import { useColorMode } from "@vueuse/core";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import type { Ref } from "vue";
+import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardFooter,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { LogOut } from "lucide-vue-next";
 
 const props = defineProps<{
-    user: User;
+    user: Ref<User | null>;
 }>();
 
 const router = useRouter();
 
 const avatar = computed(() => {
-    if (!props.user) return "";
+    if (!props.user?.value) return "";
 
     return createAvatar(initials, {
-        seed: props.user.username,
+        seed: props.user.value.username,
         size: 128,
     }).toDataUri();
 });
@@ -29,24 +39,34 @@ const handleLogout = async () => {
 </script>
 
 <template>
-    <div
-        class="bg-background rounded-2xl p-6 shadow-xl w-full h-64 flex flex-col items-center justify-center gap-4"
+    <Card
+        class="w-full border-0 shadow-none bg-background flex flex-col items-center justify-center p-4"
+        v-if="user.value"
     >
-        <div
-            class="w-20 h-20 bg-muted rounded-full flex items-center justify-center"
-        >
-            <img :src="avatar" alt="Avatar" class="rounded-full" />
-        </div>
-        <div class="text-center">
-            <h2 class="text-xl font-bold">
-                {{ user.username }}
-            </h2>
-            <p class="text-muted-foreground text-sm">
-                {{ user.name }} {{ user.surname }}
-            </p>
-        </div>
-        <button class="text-sm text-primary underline" @click="handleLogout">
-            <p>Logout</p>
-        </button>
-    </div>
+        <CardHeader class="flex flex-col items-center pb-2 w-full h-full">
+            <Avatar class="w-20 h-20 mb-2 border">
+                <AvatarImage :src="avatar" :alt="user.value.username" />
+            </Avatar>
+            <div class="text-center w-">
+                <CardTitle class="text-xl font-bold">
+                    {{ user.value.username }}
+                </CardTitle>
+                <CardDescription class="text-sm w-full flex flex-row gap-2">
+                    {{ user.value.name }} {{ user.value.surname }}
+                </CardDescription>
+            </div>
+        </CardHeader>
+
+        <CardFooter class="pt-2">
+            <Button
+                variant="ghost"
+                size="sm"
+                class="gap-2"
+                @click="handleLogout"
+            >
+                <LogOut class="w-4 h-4" />
+                Logout
+            </Button>
+        </CardFooter>
+    </Card>
 </template>
