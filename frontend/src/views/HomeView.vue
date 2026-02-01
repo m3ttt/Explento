@@ -53,6 +53,11 @@ onBeforeMount(async () => {
     }
 
     places.value = parsed.data;
+
+    mapRef.value.addPlayerMarker(
+        position.coords.latitude,
+        position.coords.longitude,
+    );
 });
 </script>
 

@@ -8,6 +8,7 @@ import { useRouter } from "vue-router";
 import type { Ref } from "vue";
 import {
     Card,
+    CardContent,
     CardHeader,
     CardTitle,
     CardDescription,

@@ -21,6 +21,8 @@ import { API_ENDPOINT } from "@/lib/config";
 const isSubmitted = ref(false);
 const categoryInput = ref("");
 
+const MAX_CATEGORIES = 3;
+
 const formData = reactive({
     name: "",
     description: "",
@@ -41,6 +43,7 @@ onMounted(() => {
 });
 
 const addCategory = () => {
+    if (formData.categories.length >= MAX_CATEGORIES) return;
     const val = categoryInput.value.trim();
     if (val && !formData.categories.includes(val)) {
         formData.categories.push(val);
@@ -126,20 +129,35 @@ const handleSubmit = async () => {
                                 required
                             />
                         </div>
+                        <p class="italic text-muted-foreground text-sm">
+                            Le coordinate inserite sono la tua posizione attuale
+                        </p>
                     </div>
 
                     <div class="grid gap-2">
-                        <Label for="categories">Categorie</Label>
+                        <div class="flex flex-row gap-2 items-center">
+                            <Label for="categories"
+                                >Categorie ({{ formData.categories.length }}/{{
+                                    MAX_CATEGORIES
+                                }})</Label
+                            >
+                        </div>
                         <div class="flex gap-2">
                             <Input
                                 id="categories"
                                 v-model="categoryInput"
                                 placeholder="Es: Natura, Sport..."
+                                :disabled="
+                                    formData.categories.length >= MAX_CATEGORIES
+                                "
                                 @keydown.enter.prevent="addCategory"
                             />
                             <Button
                                 type="button"
                                 variant="outline"
+                                :disabled="
+                                    formData.categories.length >= MAX_CATEGORIES
+                                "
                                 @click="addCategory"
                                 >Aggiungi</Button
                             >
