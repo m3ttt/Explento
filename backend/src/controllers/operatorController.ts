@@ -131,3 +131,7 @@ export const updatePlaceEdits = async (
         .status(200)
         .json({ message: "Richiesta aggiornata correttamente" });
 };
+
+export const meOperator = async (req: OperatorAuthRequest, resp: Response) => {
+    return resp.json(req.operator);
+};

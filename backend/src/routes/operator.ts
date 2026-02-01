@@ -6,6 +6,7 @@ import {
     getAllPlaceEdits,
     getPlaceEdits,
     updatePlaceEdits,
+    meOperator,
 } from "../controllers/operatorController.js";
 
 export interface OperatorAuthRequest extends Request {
@@ -65,6 +66,7 @@ router.post("/login", loginOperator);
 // Da qui in poi richieste autenticate
 router.use(operatorAuthenticate);
 
+router.get("/me", meOperator);
 router.get("/place_edit_requests", getAllPlaceEdits);
 router.get("/place_edit_requests/:id", getPlaceEdits);
 router.post("/place_edit_requests/:id", updatePlaceEdits);
