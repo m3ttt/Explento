@@ -62,60 +62,62 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-    <div class="relative w-full h-screen overflow-hidden">
-        <div class="absolute inset-0 z-0">
-            <Map ref="mapRef" />
-        </div>
-
-        <!-- In modo da impostare la navbar + tab sopra tutto -->
-        <div
-            class="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center pointer-events-none gap-3 p-8"
-        >
-            <div
-                v-if="activeTab === 'home'"
-                class="w-full overflow-x-auto snap-x snap-mandatory no-scrollbar pointer-events-auto rounded-2xl pb-6"
-            >
-                <div class="flex gap-3 w-full">
-                    <PlaceCard
-                        v-for="item in places"
-                        :key="item._id"
-                        :place="item"
-                        @click="
-                            mapRef.flyToLocation(
-                                item.location.lat,
-                                item.location.lon,
-                            )
-                        "
-                    />
-                </div>
+    <template v-if="currentUser.value">
+        <div class="relative w-full h-screen overflow-hidden">
+            <div class="absolute inset-0 z-0">
+                <Map ref="mapRef" />
             </div>
 
-            <UserProfile
-                class="w-full max-w-md pointer-events-auto pb-6"
-                :user="currentUser"
-                v-else-if="activeTab === 'profile'"
-            />
+            <!-- In modo da impostare la navbar + tab sopra tutto -->
+            <div
+                class="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center pointer-events-none gap-3 p-8"
+            >
+                <div
+                    v-if="activeTab === 'home'"
+                    class="w-full overflow-x-auto snap-x snap-mandatory no-scrollbar pointer-events-auto rounded-2xl pb-6"
+                >
+                    <div class="flex gap-3 w-full">
+                        <PlaceCard
+                            v-for="item in places"
+                            :key="item._id"
+                            :place="item"
+                            @click="
+                                mapRef.flyToLocation(
+                                    item.location.lat,
+                                    item.location.lon,
+                                )
+                            "
+                        />
+                    </div>
+                </div>
 
-            <AddPlace
-                class="w-full max-w-md pointer-events-auto pb-6"
-                v-else-if="activeTab === 'add' && currentUser.value.expert"
-            />
+                <UserProfile
+                    class="w-full max-w-md pointer-events-auto pb-6"
+                    :user="currentUser"
+                    v-else-if="activeTab === 'profile'"
+                />
 
-            <AddPlaceError
-                class="w-full max-w-md pointer-events-auto pb-6"
-                v-else-if="activeTab === 'add' && !currentUser.value.expert"
-            />
+                <AddPlace
+                    class="w-full max-w-md pointer-events-auto pb-6"
+                    v-else-if="activeTab === 'add' && currentUser.value.expert"
+                />
 
-            <Navbar
-                :activeTab="activeTab"
-                @change-tab="
-                    (tabName: string) => {
-                        activeTab = tabName;
-                    }
-                "
-            />
+                <AddPlaceError
+                    class="w-full max-w-md pointer-events-auto pb-6"
+                    v-else-if="activeTab === 'add' && !currentUser.value.expert"
+                />
+
+                <Navbar
+                    :activeTab="activeTab"
+                    @change-tab="
+                        (tabName: string) => {
+                            activeTab = tabName;
+                        }
+                    "
+                />
+            </div>
         </div>
-    </div>
+    </template>
 </template>
 
 <!-- Togliere le barre di scorrimento -->

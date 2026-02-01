@@ -4,6 +4,8 @@ import HomeView from "../views/HomeView.vue";
 import { checkAuth } from "./auth";
 import LoginView from "../views/LoginView.vue";
 import RegisterView from "../views/RegisterView.vue";
+import OperatorLoginView from "../views/OperatorLoginView.vue";
+import { checkAuthOp } from "./operatorAuth";
 
 const routes = [
     {
@@ -16,6 +18,13 @@ const routes = [
         path: "/operator",
         component: OperatorView,
         meta: { operatorAuth: true },
+        props: (route: any) => ({
+            currentOperator: route.meta.currentOperator,
+        }),
+    },
+    {
+        path: "/operator/login",
+        component: OperatorLoginView,
     },
     { path: "/login", component: LoginView },
     { path: "/register", component: RegisterView },
@@ -27,10 +36,21 @@ export const router = createRouter({
 });
 
 router.beforeEach(async (to, _, next) => {
-    const user = await checkAuth();
+    const operator = await checkAuthOp();
+    if (to.path == "/operator/login" && operator.value) {
+        return next("/operator");
+    }
 
-    // WARNING: Rimuovere in production
-    console.debug("ROUTER USER: " + JSON.stringify(user.value));
+    if (to.meta.operatorAuth) {
+        if (!operator.value) {
+            return next("/operator/login");
+        }
+
+        to.meta.currentOperator = operator;
+        return next();
+    }
+
+    const user = await checkAuth();
 
     // Redirect utente se prova a fare /login ma autenticato
     if ((to.path == "/login" || to.path == "/register") && user.value) {
@@ -45,8 +65,6 @@ router.beforeEach(async (to, _, next) => {
         to.meta.currentUser = user;
         return next();
     }
-    if (to.meta.operatorAuth) {
-        return next();
-    }
+
     return next();
 });
