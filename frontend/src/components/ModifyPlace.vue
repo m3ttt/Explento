@@ -96,7 +96,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-    <Card class="w-full h-full border-none shadow-none">
+    <Card class="w-full h-full border-none shadow-none bg-background">
         <template v-if="!isSubmitted">
             <CardHeader>
                 <CardTitle class="text-xl">
