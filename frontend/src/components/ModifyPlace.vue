@@ -19,34 +19,43 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { X, CheckCircle2 } from "lucide-vue-next";
-import { reactive, ref, onMounted } from "vue";
+import { CheckCircle2, Loader2 } from "lucide-vue-next";
+import { reactive, ref, onMounted, computed, watchEffect } from "vue";
 import { getPosition } from "@/lib/position";
 import { API_ENDPOINT } from "@/lib/config";
-import { CategoriesEnum } from "@/lib/types/place";
+import { CategoriesEnum, Place } from "@/lib/types/place";
 import { formatCategory } from "@/lib/utils";
 
-const isSubmitted = ref(false);
+const props = defineProps<{
+    initialData: Place | null;
+}>();
 
+const isSubmitted = ref(false);
+const isLoading = ref(false);
 const MAX_CATEGORIES = 3;
 
+// Determiniamo se siamo in modalità "Modifica"
+const isEditMode = computed(() => props.initialData != null);
+
 const formData = reactive({
-    name: "",
-    description: "",
-    categories: [] as string[],
+    name: props.initialData?.name ?? "",
+    description: props.initialData?.description ?? "",
+    categories: props.initialData?.categories ?? ([] as string[]),
     location: {
-        lat: 0 as number | string,
-        lon: 0 as number | string,
+        lat: props.initialData?.location.lat ?? 0,
+        lon: props.initialData?.location.lon ?? 0,
     },
-    isFree: true,
+    isFree: props.initialData?.isFree ?? true,
 });
 
 onMounted(async () => {
-    const position = await getPosition();
-    if (position) {
-        formData.location.lat = position.coords.latitude;
-        formData.location.lon = position.coords.longitude;
+    // Recuperiamo la posizione solo se è un NUOVO inserimento
+    if (!isEditMode.value) {
+        const position = await getPosition();
+        if (position) {
+            formData.location.lat = position.coords.latitude;
+            formData.location.lon = position.coords.longitude;
+        }
     }
 });
 
@@ -54,23 +63,20 @@ const updateCategories = (newValues: string[]) => {
     formData.categories = newValues;
 };
 
-const resetForm = () => {
-    formData.name = "";
-    formData.description = "";
-    formData.categories = [];
-    formData.isFree = true;
-    isSubmitted.value = false;
-};
-
 const handleSubmit = async () => {
+    isLoading.value = true;
     try {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        console.log(JSON.stringify(formData));
+        const url = isEditMode.value
+            ? `${API_ENDPOINT}/places/${props.initialData._id}`
+            : `${API_ENDPOINT}/places/request`;
 
-        const resp = await fetch(`${API_ENDPOINT}/places/request`, {
-            method: "POST",
+        const method = isEditMode.value ? "PUT" : "POST";
+
+        const resp = await fetch(url, {
+            method: method,
             headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
@@ -83,18 +89,25 @@ const handleSubmit = async () => {
         }
     } catch (error) {
         console.error("Errore durante l'invio: ", error);
+    } finally {
+        isLoading.value = false;
     }
 };
 </script>
 
 <template>
-    <Card class="w-full h-full border-0 shadow-none">
+    <Card class="w-full h-full border-none shadow-none">
         <template v-if="!isSubmitted">
             <CardHeader>
-                <CardTitle class="text-xl">Aggiungi nuovo Luogo</CardTitle>
+                <CardTitle class="text-xl">
+                    {{ isEditMode ? "Modifica Luogo" : "Aggiungi nuovo Luogo" }}
+                </CardTitle>
                 <CardDescription>
-                    Questa richiesta verrà revisionata da un operatore prima di
-                    entrare nel sistema.
+                    {{
+                        isEditMode
+                            ? "Invia una richiesta di modifica del luogo"
+                            : "Questa richiesta verrà revisionata da un operatore prima di entrare nel sistema."
+                    }}
                 </CardDescription>
             </CardHeader>
 
@@ -128,25 +141,32 @@ const handleSubmit = async () => {
                                 required
                             />
                         </div>
-                        <p class="italic text-muted-foreground text-sm">
-                            Le coordinate inserite sono la tua posizione attuale
+                        <p
+                            v-if="!isEditMode"
+                            class="italic text-muted-foreground text-sm"
+                        >
+                            Le coordinate iniziali sono la tua posizione attuale
                         </p>
                     </div>
-                    <div class="grid gap-2">
-                        <Label
-                            >Categorie ({{ formData.categories.length }}/{{
-                                MAX_CATEGORIES
-                            }})</Label
-                        >
 
-                        <Select @update:modelValue="updateCategories" multiple>
+                    <div class="grid gap-2">
+                        <Label>
+                            Categorie ({{ formData.categories.length }}/{{
+                                MAX_CATEGORIES
+                            }})
+                        </Label>
+
+                        <Select
+                            @update:modelValue="updateCategories"
+                            multiple
+                            :defaultValue="formData.categories"
+                        >
                             <SelectTrigger>
                                 <SelectValue
-                                    placeholder="Seleziona una categoria"
+                                    placeholder="Seleziona le categorie"
                                 />
                             </SelectTrigger>
                             <SelectContent>
-                                <!-- Disabilito le altre opzioni se raggiunge MAX_CATEGORIES -->
                                 <SelectItem
                                     v-for="cat in CategoriesEnum.options"
                                     :key="cat"
@@ -175,7 +195,10 @@ const handleSubmit = async () => {
                     <div class="flex items-center space-x-2">
                         <Checkbox
                             id="isFree"
-                            v-model:modelValue="formData.isFree"
+                            :defaultValue="isEditMode ? formData.isFree : false"
+                            @update:modelValue="
+                                (val: any) => (formData.isFree = val)
+                            "
                         />
                         <Label for="isFree" class="cursor-pointer">
                             L'accesso a questo luogo è gratuito
@@ -186,14 +209,14 @@ const handleSubmit = async () => {
                 <CardFooter class="pt-4">
                     <Button
                         type="submit"
-                        :disabled="isSubmitted"
+                        :disabled="isLoading"
                         class="w-full md:w-auto"
                     >
-                        {{
-                            isSubmitted
-                                ? "Invio in corso..."
-                                : "Invia Richiesta"
-                        }}
+                        <Loader2
+                            v-if="isLoading"
+                            class="mr-2 h-4 w-4 animate-spin"
+                        />
+                        {{ isEditMode ? "Invia Modifiche" : "Invia Richiesta" }}
                     </Button>
                 </CardFooter>
             </form>
@@ -204,13 +227,16 @@ const handleSubmit = async () => {
                 class="flex flex-col items-center justify-center py-12 text-center"
             >
                 <CheckCircle2 class="w-16 h-16 text-green-500 mb-4" />
-                <h3 class="text-2xl font-semibold mb-2">Richiesta inviata</h3>
+                <h3 class="text-2xl font-semibold mb-2">
+                    {{ isEditMode ? "Modifica inviata" : "Richiesta inviata" }}
+                </h3>
                 <p class="text-muted-foreground mb-8">
-                    Il luogo è stato preso in carico
+                    {{
+                        isEditMode
+                            ? "La modifica è stata presa in carico per la revisione."
+                            : "Il luogo è stato preso in carico per la revisione."
+                    }}
                 </p>
-                <Button @click="resetForm" variant="outline">
-                    Aggiungi un altro luogo
-                </Button>
             </CardContent>
         </template>
     </Card>

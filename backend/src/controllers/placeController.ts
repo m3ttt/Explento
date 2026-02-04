@@ -3,6 +3,7 @@ import { AuthRequest } from "../routes/auth.js";
 import { Place } from "../models/Place.js";
 import { PlaceEditRequest } from "../models/PlaceEditRequest.js";
 import type { ParsedQs } from "qs";
+import mongoose from "mongoose";
 
 const getDistanceFromLatLonInKm = (
     lat1: number,
@@ -230,24 +231,22 @@ export const createUpdatePlaceRequest = async (
 ) => {
     if (!req.user) return;
 
+    if (!req.params) return res.status(400).json({ error: "Nessun id dato" });
+
+    const { id } = req.params;
+
     try {
-        const {
-            placeId,
-            name,
-            description,
-            categories,
-            location,
-            images,
-            isFree,
-        } = req.body;
+        const { name, description, categories, location, images, isFree } =
+            req.body;
 
         const validationError = await validatePlaceUpdate(
+            id,
             name,
             description,
             categories,
             location,
-            images,
             isFree,
+            images,
         );
 
         if (validationError)
@@ -256,7 +255,7 @@ export const createUpdatePlaceRequest = async (
         // Creazione della richiesta di modifica
         const editRequest = new PlaceEditRequest({
             userId: req.user._id,
-            placeId,
+            placeId: id,
             isNewPlace: false,
             status: "pending",
             proposedChanges: {
@@ -314,7 +313,7 @@ async function validatePlaceUpdate(
 
     if (baseError) return baseError;
 
-    const place = await Place.findById(goodPlaceId).exec();
+    const place = await Place.findById(goodPlaceId);
     if (!place) return "Luogo non trovato";
 
     return null;
