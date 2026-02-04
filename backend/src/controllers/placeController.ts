@@ -23,9 +23,25 @@ const getDistanceFromLatLonInKm = (
     return R * c;
 };
 
-export const getPlaces = async (req: Request, res: Response) => {
+export const getPlaces = async (req: AuthRequest, res: Response) => {
     try {
-        const allPlaces = await Place.find().lean();
+        let allPlaces;
+
+        if (
+            req.user?.preferences &&
+            req.user?.preferences?.categories.length != 0
+        ) {
+            const filter: any = {
+                // TODO: Capire se mettere $in o $all
+                categories: { $in: req.user.preferences.categories },
+            };
+
+            if (!req.user.preferences.alsoPaid) filter.isFree = true;
+
+            allPlaces = await Place.find(filter).lean();
+        } else {
+            allPlaces = await Place.find().lean();
+        }
 
         const { lat, lon, radius } = req.query;
 

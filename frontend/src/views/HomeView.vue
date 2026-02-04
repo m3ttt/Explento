@@ -34,6 +34,11 @@ onBeforeMount(async () => {
     // Richiediamo i luoghi vicini
     const res = await fetch(
         `${API_ENDPOINT}/places?lat=${position.coords.latitude}&lon=${position.coords.longitude}&radius=3`,
+        {
+            headers: {
+                Authorization: "Bearer " + localStorage.getItem("token"),
+            },
+        },
     );
 
     if (!res.ok) {

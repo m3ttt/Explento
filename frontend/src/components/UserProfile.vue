@@ -87,8 +87,8 @@ const goToSurvey = () => {
                     >
                         {{
                             user.value.preferences?.alsoPaid
-                                ? "Luoghi gratutiti"
-                                : "Luoghi anche a pagamento"
+                                ? "Luoghi anche a pagamento"
+                                : "Luoghi gratutiti"
                         }}
                     </Badge>
                 </div>
