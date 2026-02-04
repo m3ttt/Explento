@@ -1,6 +1,5 @@
 const DEFAULT_LAT = 46.0726;
 const DEFAULT_LON = 11.1191;
-
 const fallBackPosition = {
     coords: {
         latitude: DEFAULT_LAT,
@@ -14,21 +13,15 @@ const fallBackPosition = {
     timestamp: Date.now(),
 } as GeolocationPosition;
 
-// Funzione che usa le WEBAPI per ottenere la posizione GPS
-export const getPosition = (): GeolocationPosition => {
+export const getPosition = async (): Promise<GeolocationPosition> => {
     if (!navigator.geolocation) {
         return fallBackPosition;
     }
 
-    let position = null;
-
-    navigator.geolocation.getCurrentPosition((pos) => {
-        position = pos;
+    return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => resolve(pos),
+            () => resolve(fallBackPosition),
+        );
     });
-
-    if (position == null) {
-        return fallBackPosition;
-    }
-
-    return position;
 };

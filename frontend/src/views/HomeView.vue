@@ -29,7 +29,7 @@ defineProps<{
 
 // Esecuzione prima che carichi il componente
 onBeforeMount(async () => {
-    const position = getPosition();
+    const position = await getPosition();
 
     // Richiediamo i luoghi vicini
     const res = await fetch(

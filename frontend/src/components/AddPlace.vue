@@ -7,6 +7,13 @@ import {
     CardHeader,
     CardFooter,
 } from "@/components/ui/card";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,9 +24,10 @@ import { X, CheckCircle2 } from "lucide-vue-next";
 import { reactive, ref, onMounted } from "vue";
 import { getPosition } from "@/lib/position";
 import { API_ENDPOINT } from "@/lib/config";
+import { CategoriesEnum } from "@/lib/types/place";
+import { formatCategory } from "@/lib/utils";
 
 const isSubmitted = ref(false);
-const categoryInput = ref("");
 
 const MAX_CATEGORIES = 3;
 
@@ -34,25 +42,16 @@ const formData = reactive({
     isFree: true,
 });
 
-onMounted(() => {
-    const position = getPosition();
+onMounted(async () => {
+    const position = await getPosition();
     if (position) {
         formData.location.lat = position.coords.latitude;
         formData.location.lon = position.coords.longitude;
     }
 });
 
-const addCategory = () => {
-    if (formData.categories.length >= MAX_CATEGORIES) return;
-    const val = categoryInput.value.trim();
-    if (val && !formData.categories.includes(val)) {
-        formData.categories.push(val);
-        categoryInput.value = "";
-    }
-};
-
-const removeCategory = (index: number) => {
-    formData.categories.splice(index, 1);
+const updateCategories = (newValues: string[]) => {
+    formData.categories = newValues;
 };
 
 const resetForm = () => {
@@ -133,52 +132,35 @@ const handleSubmit = async () => {
                             Le coordinate inserite sono la tua posizione attuale
                         </p>
                     </div>
-
                     <div class="grid gap-2">
-                        <div class="flex flex-row gap-2 items-center">
-                            <Label for="categories"
-                                >Categorie ({{ formData.categories.length }}/{{
-                                    MAX_CATEGORIES
-                                }})</Label
-                            >
-                        </div>
-                        <div class="flex gap-2">
-                            <Input
-                                id="categories"
-                                v-model="categoryInput"
-                                placeholder="Es: Natura, Sport..."
-                                :disabled="
-                                    formData.categories.length >= MAX_CATEGORIES
-                                "
-                                @keydown.enter.prevent="addCategory"
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                :disabled="
-                                    formData.categories.length >= MAX_CATEGORIES
-                                "
-                                @click="addCategory"
-                                >Aggiungi</Button
-                            >
-                        </div>
-                        <div class="flex flex-wrap gap-2 mt-1">
-                            <Badge
-                                v-for="(cat, index) in formData.categories"
-                                :key="index"
-                                variant="secondary"
-                                class="pl-2"
-                            >
-                                {{ cat }}
-                                <button
-                                    type="button"
-                                    @click="removeCategory(index)"
-                                    class="ml-1 hover:text-destructive"
+                        <Label
+                            >Categorie ({{ formData.categories.length }}/{{
+                                MAX_CATEGORIES
+                            }})</Label
+                        >
+
+                        <Select @update:modelValue="updateCategories" multiple>
+                            <SelectTrigger>
+                                <SelectValue
+                                    placeholder="Seleziona una categoria"
+                                />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <!-- Disabilito le altre opzioni se raggiunge MAX_CATEGORIES -->
+                                <SelectItem
+                                    v-for="cat in CategoriesEnum.options"
+                                    :key="cat"
+                                    :value="cat"
+                                    :disabled="
+                                        formData.categories.length >=
+                                            MAX_CATEGORIES &&
+                                        !formData.categories.includes(cat)
+                                    "
                                 >
-                                    <X class="w-3 h-3" />
-                                </button>
-                            </Badge>
-                        </div>
+                                    {{ formatCategory(cat) }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div class="grid gap-2">
@@ -224,8 +206,7 @@ const handleSubmit = async () => {
                 <CheckCircle2 class="w-16 h-16 text-green-500 mb-4" />
                 <h3 class="text-2xl font-semibold mb-2">Richiesta inviata</h3>
                 <p class="text-muted-foreground mb-8">
-                    Il luogo è stato preso in carico. Riceverai una notifica non
-                    appena sarà approvato.
+                    Il luogo è stato preso in carico
                 </p>
                 <Button @click="resetForm" variant="outline">
                     Aggiungi un altro luogo
