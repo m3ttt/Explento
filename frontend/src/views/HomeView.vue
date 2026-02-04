@@ -2,8 +2,6 @@
 import Map from "@/components/Map.vue";
 import PlaceCard from "../components/PlaceCard.vue";
 import Navbar from "../components/Navbar.vue";
-import AddPlace from "@/components/AddPlace.vue";
-import AddPlaceError from "@/components/AddPlaceError.vue";
 import UserProfile from "@/components/UserProfile.vue";
 
 import { onBeforeMount, Ref, ref } from "vue";
@@ -13,6 +11,8 @@ import { API_ENDPOINT } from "../lib/config";
 import { User } from "@/lib/types/user";
 import { Place, PlaceSchema } from "@/lib/types/place";
 import { getPosition } from "@/lib/position";
+import ModifyPlace from "@/components/ModifyPlace.vue";
+import ExpertError from "@/components/ExpertError.vue";
 
 // I luoghi da visualizzare come consigliati
 let places = ref<Place[]>([]);
@@ -22,10 +22,16 @@ const mapRef = ref();
 
 // Tab nella barra di navigazione attiva
 const activeTab = ref("home");
+const selectedEditPlace = ref<Place | null>(null);
 
 defineProps<{
     currentUser: Ref<User | null>;
 }>();
+
+const openEdit = (place: Place) => {
+    selectedEditPlace.value = place;
+    activeTab.value = "edit";
+};
 
 // Esecuzione prima che carichi il componente
 onBeforeMount(async () => {
@@ -92,6 +98,7 @@ onBeforeMount(async () => {
                                     item.location.lon,
                                 )
                             "
+                            @edit="openEdit"
                         />
                     </div>
                 </div>
@@ -102,14 +109,24 @@ onBeforeMount(async () => {
                     v-else-if="activeTab === 'profile'"
                 />
 
-                <AddPlace
+                <ModifyPlace
                     class="w-full max-w-md pointer-events-auto pb-6"
                     v-else-if="activeTab === 'add' && currentUser.value.expert"
+                    :initialData="null"
                 />
 
-                <AddPlaceError
+                <ModifyPlace
+                    v-else-if="activeTab === 'edit' && currentUser.value.expert"
                     class="w-full max-w-md pointer-events-auto pb-6"
-                    v-else-if="activeTab === 'add' && !currentUser.value.expert"
+                    :initialData="selectedEditPlace"
+                />
+
+                <ExpertError
+                    class="w-full max-w-md pointer-events-auto pb-6"
+                    v-else-if="
+                        (activeTab === 'add' && !currentUser.value.expert) ||
+                        (activeTab === 'edit' && !currentUser.value.expert)
+                    "
                 />
 
                 <Navbar
