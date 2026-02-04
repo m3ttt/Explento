@@ -1,10 +1,27 @@
 import { InferSchemaType, Schema, model } from "mongoose";
 
 const PlaceSchema = new Schema({
-    name: {type: String, required: true},
-    normalizedName: {type: String, index: true},
+    name: { type: String, required: true },
+    normalizedName: { type: String, index: true },
     description: String,
-    categories: { type: [String], required: true },
+    categories: {
+        type: [String],
+        required: true,
+        enum: [
+            "montagna",
+            "lago",
+            "cultura",
+            "scienza",
+            "borgo",
+            "città",
+            "gusto",
+            "indoor",
+            "outdoor",
+            "impegnativo",
+            "rilassante",
+            "per famiglie",
+        ],
+    },
     location: {
         lat: { type: Number, required: true },
         lon: { type: Number, required: true },

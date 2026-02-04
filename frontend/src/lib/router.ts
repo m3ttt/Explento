@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, type RouteLocation } from "vue-router";
 import OperatorView from "../views/OperatorView.vue";
 import HomeView from "../views/HomeView.vue";
 import { checkAuth } from "./auth";
@@ -6,25 +6,36 @@ import LoginView from "../views/LoginView.vue";
 import RegisterView from "../views/RegisterView.vue";
 import OperatorLoginView from "../views/OperatorLoginView.vue";
 import { checkAuthOp } from "./operatorAuth";
+import SurveyView from "../views/SurveyView.vue";
 
 const routes = [
     {
         path: "/",
         component: HomeView,
         meta: { userAuth: true },
-        props: (route: any) => ({ currentUser: route.meta.currentUser }),
+        props: (route: RouteLocation) => ({
+            currentUser: route.meta.currentUser,
+        }),
     },
     {
         path: "/operator",
         component: OperatorView,
         meta: { operatorAuth: true },
-        props: (route: any) => ({
+        props: (route: RouteLocation) => ({
             currentOperator: route.meta.currentOperator,
         }),
     },
     {
         path: "/operator/login",
         component: OperatorLoginView,
+    },
+    {
+        path: "/survey",
+        component: SurveyView,
+        meta: { userAuth: true },
+        props: (route: RouteLocation) => ({
+            currentUser: route.meta.currentUser,
+        }),
     },
     { path: "/login", component: LoginView },
     { path: "/register", component: RegisterView },
@@ -63,6 +74,13 @@ router.beforeEach(async (to, _, next) => {
         }
 
         to.meta.currentUser = user;
+
+        if (
+            user.value.preferences?.categories.length == 0 &&
+            to.path != "/survey"
+        )
+            return next("/survey");
+
         return next();
     }
 

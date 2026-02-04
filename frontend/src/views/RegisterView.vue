@@ -67,7 +67,7 @@ async function handleRegister() {
     }
 
     isLoading.value = false;
-    router.push("/");
+    router.push("/survey");
 }
 </script>
 

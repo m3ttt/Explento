@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { MapPin } from "lucide-vue-next";
 import { Badge } from "@/components/ui/badge";
 import { Place } from "@/lib/types/place";
+import { formatCategory } from "@/lib/utils";
 
 const props = defineProps<{
     place: Place;
@@ -11,11 +12,7 @@ const props = defineProps<{
 const parsedCategories = computed(() => {
     if (!props.place.categories) return [];
 
-    return props.place.categories
-        .toString()
-        .split(",")
-        .map((cat) => cat.trim())
-        .slice(0, 2);
+    return props.place.categories.slice(0, 3).map(formatCategory);
 });
 </script>
 
