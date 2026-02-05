@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { Euro, MapPin, Ticket, Pencil } from "lucide-vue-next"; // Aggiunto Pencil
+import { MapPin, Ticket, Pencil } from "lucide-vue-next";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button"; // Aggiunto Button
+import { Button } from "@/components/ui/button";
 import { Place } from "@/lib/types/place";
 import { formatCategory } from "@/lib/utils";
+import { toast } from "vue-sonner";
 
 const props = defineProps<{
     place: Place;
@@ -22,11 +23,13 @@ const parsedCategories = computed(() => {
 const handleEdit = () => {
     emit("edit", props.place);
 };
+
+const isTooFar = computed(() => props.place.distance > 0.02);
 </script>
 
 <template>
     <div
-        class="relative flex flex-col w-48 h-32 p-3 rounded-2xl bg-background snap-center shrink-0 overflow-hidden group cursor-pointer transition-all shadow-sm"
+        class="relative flex flex-col w-48 h-56 gap-4 p-3 rounded-2xl bg-background snap-center shrink-0 overflow-hidden group cursor-pointer transition-all shadow-sm"
     >
         <div class="absolute top-2 right-2 z-20 flex gap-1">
             <Button
@@ -74,5 +77,13 @@ const handleEdit = () => {
                 </div>
             </div>
         </div>
+        <!-- Placeholder momentaneo -->
+        <Button
+            :disabled="isTooFar"
+            @click="toast.success('Luogo completato. Assegnati 5EXP')"
+            :variant="isTooFar ? 'outline' : 'default'"
+        >
+            {{ !isTooFar ? "Completa Luogo" : "Troppo distante" }}
+        </Button>
     </div>
 </template>
