@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { z } from "zod";
+import NavbarOperator from "../components/NavbarOperator.vue";
 
 // Componenti Shadcn
 import { Button } from "@/components/ui/button";
@@ -21,37 +22,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 
-import Navbar from "../components/Navbar.vue";
+import { PlaceEditRequest, PlaceEditRequestSchema } from "@/lib/types/placeEditRequest";
 import { Loader2, Copy, Check } from "lucide-vue-next"; 
-
-// --- SCHEMA ZOD ---
-const PlaceEditRequestSchema = z.object({
-  _id: z.string(),
-  placeId: z.string().nullable().optional(),
-  userId: z.string().nullable().optional(),
-  proposedChanges: z.object({
-    name: z.string().optional(),
-    description: z.string().optional(),
-    categories: z.array(z.string()).optional(),
-    location: z
-      .object({
-        lat: z.number(),
-        lon: z.number(),
-      })
-      .optional(),
-    images: z.array(z.any()).optional(),
-    isFree: z.boolean().optional(),
-  }),
-  isNewPlace: z.boolean(),
-  status: z.enum(["pending", "approved", "rejected"]),
-  operatorId: z.string().nullable().optional(),
-  operatorComment: z.string().nullable().optional(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  __v: z.number().optional(),
-});
-
-type PlaceEditRequest = z.infer<typeof PlaceEditRequestSchema>;
 
 // --- STATO ---
 const requests = ref<PlaceEditRequest[]>([]);
@@ -83,8 +55,16 @@ async function fetchRequests() {
       params.append("isNewPlace", filters.value.isNewPlace);
     }
 
+    const token = localStorage.getItem("token"); // Prendo token
+    if (!token) throw new Error("Operatore non autenticato");
+
     const res = await fetch(
-      `http://localhost:3000/api/v1/operator/place_edit_requests?${params.toString()}`
+      `http://localhost:3000/api/v1/operator/place_edit_requests?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
     if (!res.ok) throw new Error("Errore nel caricamento delle richieste");
@@ -125,11 +105,18 @@ async function updateRequestStatus(
   comment?: string
 ) {
   try {
+
+    const token = localStorage.getItem("token"); // Prendo token
+    if (!token) throw new Error("Operatore non autenticato");
+    
     const res = await fetch(
       `http://localhost:3000/api/v1/operator/place_edit_requests/${requestId}`,
       {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({ status: newStatus, operatorComment: comment }),
       }
     );
@@ -423,8 +410,8 @@ onMounted(fetchRequests);
       Nessuna richiesta trovata con i filtri correnti.
     </div>
 
-    <div class="fixed bottom-0 left-0 w-full flex justify-center pb-4 z-50">
-      <Navbar />
+    <div class="fixed bottom-6 left-0 right-0 z-[1000] flex justify-center">
+      <NavbarOperator />
     </div>
   </div>
 </template>

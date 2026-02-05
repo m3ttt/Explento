@@ -1,115 +1,148 @@
 <script setup lang="ts">
-import HomeMap from "../components/HomeMap.vue";
-import { API_ENDPOINT } from "../lib/config";
-import { onBeforeMount, ref } from "vue";
+import Map from "@/components/Map.vue";
 import PlaceCard from "../components/PlaceCard.vue";
 import Navbar from "../components/Navbar.vue";
-import { getUser } from "@/lib/auth";
-import { createAvatar } from "@dicebear/core";
-import { initials } from "@dicebear/collection";
+import UserProfile from "@/components/UserProfile.vue";
 
-// Stato per i dati
-let places = ref();
+import { onBeforeMount, Ref, ref } from "vue";
+import z from "zod";
+
+import { API_ENDPOINT } from "../lib/config";
+import { User } from "@/lib/types/user";
+import { Place, PlaceSchema } from "@/lib/types/place";
+import { getPosition } from "@/lib/position";
+import ModifyPlace from "@/components/ModifyPlace.vue";
+import ExpertError from "@/components/ExpertError.vue";
+
+// I luoghi da visualizzare come consigliati
+let places = ref<Place[]>([]);
+
+// Riferimento alla mappa
 const mapRef = ref();
 
-// Stato per la navigazione: 'home' oppure 'profile'
+// Tab nella barra di navigazione attiva
 const activeTab = ref("home");
+const selectedEditPlace = ref<Place | null>(null);
 
-const user = getUser();
+defineProps<{
+    currentUser: Ref<User | null>;
+}>();
 
-function handlePlaceClick(place: any) {
-    if (!place.location) return;
-    mapRef.value.flyToLocation(place.location.lat, place.location.lon);
-}
+const openEdit = (place: Place) => {
+    selectedEditPlace.value = place;
+    activeTab.value = "edit";
+};
 
-// Funzione per gestire il cambio tab dalla Navbar
-function handleTabChange(tabName: string) {
-    activeTab.value = tabName;
-}
-
+// Esecuzione prima che carichi il componente
 onBeforeMount(async () => {
-    try {
-        const res = await fetch(`${API_ENDPOINT}/places`);
-        if (res.status === 200) {
-            places.value = await res.json();
-        } else {
-            places.value = [];
-        }
-    } catch (e) {
-        console.error(e);
-        places.value = [];
-    }
-});
+    const position = await getPosition();
 
-const avatar = createAvatar(initials, {
-    seed: user.username + user.name + user.surname,
-    size: 128,
-}).toDataUri();
+    // Richiediamo i luoghi vicini
+    const res = await fetch(
+        `${API_ENDPOINT}/places?lat=${position.coords.latitude}&lon=${position.coords.longitude}&radius=3`,
+        {
+            headers: {
+                Authorization: "Bearer " + localStorage.getItem("token"),
+            },
+        },
+    );
+
+    if (!res.ok) {
+        places.value = [];
+        return;
+    }
+
+    const data = await res.json();
+
+    // Faccio il parsing dei dati
+    const parsed = await z.array(PlaceSchema).safeParseAsync(data);
+
+    if (!parsed.success) {
+        places.value = [];
+        console.error(parsed.error);
+        return;
+    }
+
+    places.value = parsed.data;
+
+    mapRef.value.addPlayerMarker(
+        position.coords.latitude,
+        position.coords.longitude,
+    );
+});
 </script>
 
 <template>
-    <div class="relative w-full h-screen overflow-hidden">
-        <div class="absolute inset-0 z-0">
-            <HomeMap ref="mapRef" />
-        </div>
-
-        <div
-            class="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center pointer-events-none gap-3 p-8"
-        >
-            <div
-                v-if="activeTab === 'home'"
-                class="w-full overflow-x-auto snap-x snap-mandatory no-scrollbar pointer-events-auto rounded-2xl pb-6"
-            >
-                <div class="flex gap-3 w-full">
-                    <PlaceCard
-                        v-for="item in places"
-                        :key="item.id"
-                        :place="item"
-                        @click="handlePlaceClick(item)"
-                    />
-                </div>
+    <template v-if="currentUser.value">
+        <div class="relative w-full h-screen overflow-hidden">
+            <div class="absolute inset-0 z-0">
+                <Map ref="mapRef" />
             </div>
 
+            <!-- In modo da impostare la navbar + tab sopra tutto -->
             <div
-                v-else-if="activeTab === 'profile'"
-                class="w-full max-w-md pointer-events-auto pb-6"
+                class="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center pointer-events-none gap-3 p-8"
             >
                 <div
-                    class="bg-background rounded-2xl p-6 shadow-xl border w-full h-64 flex flex-col items-center justify-center gap-4"
+                    v-if="activeTab === 'home'"
+                    class="w-full overflow-x-auto snap-x snap-mandatory no-scrollbar pointer-events-auto rounded-2xl pb-6"
                 >
-                    <div
-                        class="w-20 h-20 bg-muted rounded-full flex items-center justify-center"
-                    >
-                        <img :src="avatar" alt="Avatar" class="rounded-full" />
+                    <div class="flex gap-3 w-full">
+                        <PlaceCard
+                            v-for="item in places"
+                            :key="item._id"
+                            :place="item"
+                            @click="
+                                mapRef.flyToLocation(
+                                    item.location.lat,
+                                    item.location.lon,
+                                )
+                            "
+                            @edit="openEdit"
+                        />
                     </div>
-                    <div class="text-center">
-                        <h2 class="text-xl font-bold">
-                            {{ user.username }}
-                        </h2>
-                        <p class="text-muted-foreground text-sm">
-                            {{ user.name }} {{ user.surname }}
-                        </p>
-                    </div>
-                    <button class="text-sm text-primary underline">
-                        <RouterLink to="/logout"> Logout </RouterLink>
-                    </button>
                 </div>
-            </div>
 
-            <div
-                v-else-if="activeTab === 'add'"
-                class="w-full max-w-md pointer-events-auto pb-6"
-            >
-                <div class="bg-background rounded-2xl p-6 w-full">
-                    <h1>Add new Place</h1>
-                </div>
-            </div>
+                <UserProfile
+                    class="w-full max-w-md pointer-events-auto pb-6"
+                    :user="currentUser"
+                    v-else-if="activeTab === 'profile'"
+                />
 
-            <Navbar :activeTab="activeTab" @change-tab="handleTabChange" />
+                <ModifyPlace
+                    class="w-full max-w-md pointer-events-auto pb-6"
+                    v-else-if="activeTab === 'add' && currentUser.value.expert"
+                    :initialData="null"
+                />
+
+                <ModifyPlace
+                    v-else-if="activeTab === 'edit' && currentUser.value.expert"
+                    class="w-full max-w-md pointer-events-auto pb-6"
+                    :initialData="selectedEditPlace"
+                />
+
+                <ExpertError
+                    class="w-full max-w-md pointer-events-auto pb-6"
+                    v-else-if="
+                        (activeTab === 'add' && !currentUser.value.expert) ||
+                        (activeTab === 'edit' && !currentUser.value.expert)
+                    "
+                />
+
+                <Navbar
+                    :activeTab="activeTab"
+                    @change-tab="
+                        (tabName: string) => {
+                            activeTab = tabName;
+                        }
+                    "
+                />
+            </div>
         </div>
-    </div>
+    </template>
 </template>
 
+<!-- Togliere le barre di scorrimento -->
 <style scoped>
 .no-scrollbar::-webkit-scrollbar {
     display: none;

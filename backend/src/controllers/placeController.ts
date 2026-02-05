@@ -3,17 +3,83 @@ import { AuthRequest } from "../routes/auth.js";
 import { Place } from "../models/Place.js";
 import { PlaceEditRequest } from "../models/PlaceEditRequest.js";
 import type { ParsedQs } from "qs";
+import mongoose from "mongoose";
+
+const getDistanceFromLatLonInKm = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) *
+            Math.cos(lat2 * (Math.PI / 180)) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+};
 
 export const getPlaces = async (req: AuthRequest, res: Response) => {
     try {
-        const places = await Place.find(); // recupera tutti i luoghi dal DB
-        res.status(200).json(places);
+        let allPlaces;
+
+        if (
+            req.user?.preferences &&
+            req.user?.preferences?.categories.length != 0
+        ) {
+            const filter: any = {
+                // TODO: Capire se mettere $in o $all
+                categories: { $in: req.user.preferences.categories },
+            };
+
+            if (!req.user.preferences.alsoPaid) filter.isFree = true;
+
+            allPlaces = await Place.find(filter).lean();
+        } else {
+            allPlaces = await Place.find().lean();
+        }
+
+        const { lat, lon, radius } = req.query;
+
+        if (lat && lon) {
+            const userLat = parseFloat(lat as string);
+            const userLon = parseFloat(lon as string);
+            const searchRadius = radius ? parseFloat(radius as string) : 5;
+
+            const nearbyPlaces = allPlaces
+                .map((place) => {
+                    let distance = 0;
+
+                    if (place.location)
+                        distance = getDistanceFromLatLonInKm(
+                            userLat,
+                            userLon,
+                            place.location.lat,
+                            place.location.lon,
+                        );
+
+                    return {
+                        ...place,
+                        distance: parseFloat(distance.toFixed(2)),
+                    };
+                })
+                .filter((place) => place.distance <= searchRadius)
+                .sort((a, b) => a.distance - b.distance);
+
+            return res.status(200).json(nearbyPlaces);
+        }
+
+        return res.status(200).json(allPlaces);
     } catch (error) {
-        console.error("Errore recupero luoghi:", error);
+        console.error(error);
         res.status(500).json({ message: "Errore del server" });
     }
 };
-
 function validatePlaceBase(
     name: string,
     description: string | undefined,
@@ -26,7 +92,8 @@ function validatePlaceBase(
     if (name.length < 3) return "Nome troppo corto";
     if (name.length > 100) return "Nome troppo lungo";
 
-    if (!categories || !Array.isArray(categories) || categories.length === 0)
+    // Solo 3 categorie al massimo, e anche minimo 3 categorie
+    if (!categories || !Array.isArray(categories) || categories.length !== 3)
         return "Categorie non valide";
 
     for (const cat of categories) {
@@ -66,7 +133,6 @@ function validatePlaceBase(
     return null;
 }
 
-
 // Normalizzazione avanzata stringa
 const normalizeString = (str: string) => {
     return str
@@ -85,6 +151,10 @@ export const createAddPlaceRequest = async (
 ) => {
     if (!req.user)
         return res.status(401).json({ message: "Utente non autenticato" });
+
+    if(!req.user?.expert) {
+        return res.status(401).json({ message: "Utente non esperto" });
+    }
 
     try {
         const { name, description, categories, location, images, isFree } =
@@ -119,6 +189,7 @@ export const createAddPlaceRequest = async (
             userId: req.user._id,
             proposedChanges: {
                 name,
+                normalizedName: normalized,
                 description,
                 categories,
                 location,
@@ -150,30 +221,38 @@ async function validatePlaceUpload(
     isFree: boolean,
     images?: string[],
 ) {
-    return validatePlaceBase(name, description, categories, location, isFree, images);
+    return validatePlaceBase(
+        name,
+        description,
+        categories,
+        location,
+        isFree,
+        images,
+    );
 }
 
-export const createUpdatePlaceRequest = async (req: AuthRequest, res: Response) => {
+export const createUpdatePlaceRequest = async (
+    req: AuthRequest,
+    res: Response,
+) => {
     if (!req.user) return;
 
+    if (!req.params) return res.status(400).json({ error: "Nessun id dato" });
+
+    const { id } = req.params;
+
     try {
-        const {
-            placeId,
-            name,
-            description,
-            categories,
-            location,
-            images,
-            isFree,
-        } = req.body;
+        const { name, description, categories, location, images, isFree } =
+            req.body;
 
         const validationError = await validatePlaceUpdate(
+            id,
             name,
             description,
             categories,
             location,
-            images,
             isFree,
+            images,
         );
 
         if (validationError)
@@ -182,7 +261,7 @@ export const createUpdatePlaceRequest = async (req: AuthRequest, res: Response) 
         // Creazione della richiesta di modifica
         const editRequest = new PlaceEditRequest({
             userId: req.user._id,
-            placeId,
+            placeId: id,
             isNewPlace: false,
             status: "pending",
             proposedChanges: {
@@ -235,12 +314,12 @@ async function validatePlaceUpdate(
         categories,
         location,
         isFree,
-        images
+        images,
     );
 
     if (baseError) return baseError;
 
-    const place = await Place.findById(goodPlaceId).exec();
+    const place = await Place.findById(goodPlaceId);
     if (!place) return "Luogo non trovato";
 
     return null;

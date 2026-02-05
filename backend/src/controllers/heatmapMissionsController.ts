@@ -1,37 +1,26 @@
 import { Router, Response } from "express";
 import { User } from "../models/User.js";
 import { AuthRequest } from "../routes/auth.js";
-import { Mission } from "../models/Mission.js";
 import { Place } from "../models/Place.js";
 
 const router = Router();
 
 export const heatmapMissions = async (req: AuthRequest, resp: Response) => {
-
     try {
         const result = await User.aggregate([
             { $unwind: "$missionsProgresses" },
             { $match: { "missionsProgresses.completed": true } },
+            { $unwind: "$missionsProgresses.requiredPlacesVisited" },
 
-            {
-                $lookup: {
-                    from: "missions",
-                    localField: "missionsProgresses.missionId",
-                    foreignField: "_id",
-                    as: "mission",
-                },
-            },
-            { $unwind: "$mission" },
-
-            { $unwind: "$mission.requiredPlaces" },
-
+            // Conteggio delle missioni completate per ogni place
             {
                 $group: {
-                    _id: "$mission.requiredPlaces.placeId",
+                    _id: "$missionsProgresses.requiredPlacesVisited.placeId",
                     completedMissions: { $sum: 1 },
                 },
             },
 
+            // Join con la collection Place
             {
                 $lookup: {
                     from: "places",
@@ -40,17 +29,23 @@ export const heatmapMissions = async (req: AuthRequest, resp: Response) => {
                     as: "place",
                 },
             },
-            { $unwind: "$place" },
 
+            // Se non c'è corrispondenza, preserva l'array vuoto
+            { $unwind: { path: "$place", preserveNullAndEmptyArrays: true } },
+
+            // Output finale per il frontend
             {
                 $project: {
                     _id: 0,
-                    placeId: "$place._id",
+                    placeId: "$_id",
+                    completedMissions: 1,
                     name: "$place.name",
                     location: "$place.location",
-                    completedMissions: 1,
                 },
             },
+
+            // Rimuove eventuali places senza location
+            { $match: { location: { $ne: null } } },
         ]);
 
         resp.json(result);
@@ -60,6 +55,6 @@ export const heatmapMissions = async (req: AuthRequest, resp: Response) => {
             error: "Errore durante la generazione della heatmap",
         });
     }
-}
+};
 
 export default router;

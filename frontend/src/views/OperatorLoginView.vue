@@ -11,10 +11,9 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 
-import { login } from "../lib/auth";
-
 import { useRouter } from "vue-router";
 import { ref } from "vue";
+import { loginOp } from "@/lib/operatorAuth";
 
 const router = useRouter();
 
@@ -31,7 +30,7 @@ async function triggerLogin() {
     loading.value = true;
     error.value = "";
 
-    const res = await login(formData.value.username, formData.value.password);
+    const res = await loginOp(formData.value.username, formData.value.password);
 
     if (res.error) {
         error.value = "Login fallito. Username o password errati";
@@ -40,7 +39,7 @@ async function triggerLogin() {
     }
 
     loading.value = false;
-    router.push("/");
+    router.push("/operator");
     return;
 }
 </script>
@@ -53,7 +52,8 @@ async function triggerLogin() {
             <CardHeader class="space-y-1 text-center">
                 <CardTitle class="text-2xl font-bold">Accesso</CardTitle>
                 <CardDescription>
-                    Inserisci le tue credenziali per entrare in Explento
+                    Inserisci le tue credenziali per entrare nel Pannello
+                    Operatore
                 </CardDescription>
             </CardHeader>
 
@@ -72,7 +72,7 @@ async function triggerLogin() {
                             id="username"
                             type="text"
                             v-model="formData.username"
-                            placeholder="Test"
+                            placeholder="operatore@gmail.com"
                             required
                             class="bg-background"
                         />
@@ -85,7 +85,7 @@ async function triggerLogin() {
                         <Input
                             id="password"
                             type="password"
-                            placeholder="Test"
+                            placeholder="operatore"
                             v-model="formData.password"
                             required
                             class="bg-background"
@@ -105,31 +105,6 @@ async function triggerLogin() {
                         ></span>
                         {{ loading ? "Accesso in corso..." : "Accedi" }}
                     </Button>
-
-                    <div class="relative w-full">
-                        <div class="absolute inset-0 flex items-center">
-                            <span class="w-full border-t" />
-                        </div>
-                        <div
-                            class="relative flex justify-center text-xs uppercase"
-                        >
-                            <span
-                                class="bg-background px-2 text-muted-foreground"
-                            >
-                                Oppure
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="text-center text-sm text-muted-foreground">
-                        Non hai ancora un account?
-                        <router-link
-                            to="/register"
-                            class="font-medium text-primary underline underline-offset-4 hover:text-primary/70"
-                        >
-                            Registrati ora
-                        </router-link>
-                    </div>
                 </CardFooter>
             </form>
         </Card>

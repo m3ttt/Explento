@@ -1,15 +1,18 @@
 import express, { NextFunction, Request, Response } from "express";
-import { Operator, OperatorType } from "../models/Operator.js";
+// import { Operator, OperatorType } from "../models/Operator.js";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import {
     loginOperator,
     getAllPlaceEdits,
-    getPlaceEditsById,
+    getPlaceEdits,
     updatePlaceEdits,
+    meOperator,
 } from "../controllers/operatorController.js";
 
+import { Operator, OperatorDocument } from "../models/Operator.js";
+
 export interface OperatorAuthRequest extends Request {
-    operator?: OperatorType & Document;
+    operator?: OperatorDocument;
 }
 
 export async function operatorAuthenticate(
@@ -44,7 +47,7 @@ export async function operatorAuthenticate(
                 .json({ error: "Token non valido o scaduto" });
 
         const foundOperator = (await Operator.findById(operatorId).exec()) as
-            | (OperatorType & Document)
+            | OperatorDocument
             | null;
         if (!foundOperator)
             return res
@@ -64,10 +67,11 @@ const router = express.Router();
 router.post("/login", loginOperator);
 
 // Da qui in poi richieste autenticate
-// router.use(operatorAuthenticate);
+router.use(operatorAuthenticate);
 
+router.get("/me", meOperator);
 router.get("/place_edit_requests", getAllPlaceEdits);
-router.get("/place_edit_requests/:id", getPlaceEditsById);
+router.get("/place_edit_requests/:id", getPlaceEdits);
 router.patch("/place_edit_requests/:id", updatePlaceEdits);
 
 export default router;
