@@ -1,8 +1,8 @@
 import type { Response } from "express";
 import { AuthRequest } from "../routes/auth.js";
 import { Place } from "../models/Place.js";
-import { UserType } from "../models/User.js";
-import { Mission } from "../models/Mission.js";
+import { User, UserType } from "../models/User.js";
+import Mission from "../models/Mission.js";
 import type { ParsedQs } from "qs";
 
 /**
@@ -23,7 +23,7 @@ export const triggerVisitPlace = async (req: AuthRequest, resp: Response) => {
         req.body.lat,
         req.body.lon,
     );
-    
+
     if (validationError)
         return resp.status(400).json({ error: validationError });
 
@@ -147,3 +147,33 @@ export const getMeInformation = async (req: AuthRequest, resp: Response) => {
 };
 
 export const setSuggestions = async (req: AuthRequest, resp: Response) => {};
+
+/**
+ * Aggiorna le preferenze utente
+ *
+ * @param req - Oggetto della richiesta autenticata, deve contenere l'utente in `req.user`
+ * @param resp - Oggetto della risposta, usato per inviare il risultato
+ * @returns Risposta HTTP con codice di stato
+ */
+export const updatePreferences = async (req: AuthRequest, resp: Response) => {
+    if (!req.body) {
+        return resp.status(400).json({ error: "Informazioni mancanti" });
+    }
+
+    const { alsoPaid, categories } = req.body;
+
+    if (alsoPaid == null || categories == null)
+        return resp.status(400).json({ error: "Informazioni mancanti" });
+
+    const user = await User.findById(req.user?._id);
+    if (!user) return resp.status(400).json({ error: "Utente non trovato" });
+
+    user.preferences = {
+        alsoPaid: alsoPaid,
+        categories: categories,
+    };
+
+    user.save();
+
+    return resp.status(200).json({ message: "Ok" });
+};

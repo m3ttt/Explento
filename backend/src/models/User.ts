@@ -7,9 +7,32 @@ const UserSchema = new Schema({
     surname: { type: String, required: true },
     password: { type: String, required: true },
     profileImage: String,
-    preferences: [String],
+    preferences: {
+        alsoPaid: { type: Boolean },
+        categories: {
+            type: [String],
+            required: true,
+            enum: [
+                "montagna",
+                "lago",
+                "cultura",
+                "scienza",
+                "borgo",
+                "città",
+                "gusto",
+                "indoor",
+                "outdoor",
+                "impegnativo",
+                "rilassante",
+                "per famiglie",
+            ],
+            _id: false,
+        },
+        _id: false,
+    },
     expert: { type: Boolean, default: false },
     exp: { type: Number, default: 0 },
+    // TODO: Inserire data iscrizione
 
     visitedPlaces: [
         {

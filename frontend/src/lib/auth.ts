@@ -1,48 +1,38 @@
 import { API_ENDPOINT } from "./config";
-import { UserSchemaZod, type User } from "./type";
+import { UserSchema, type User } from "../lib/types/user";
+import { ref, type Ref } from "vue";
 
-let user: User | null = null;
-let isChecking = false;
+// Variabile che rappresenta l'utente
+let user = ref<User | null>(null);
 
-export async function checkAuth() {
+export async function checkAuth(): Promise<Ref<User | null>> {
+    user.value = null;
+
     const token = localStorage.getItem("token");
 
-    if (!token) return null;
+    // No JWT Token, no user
+    if (!token) return user;
 
-    if (user) return user;
-    if (isChecking) return null;
-
-    isChecking = true;
-
+    // Provo a fare /me con il token
     const resp = await fetch(`${API_ENDPOINT}/me`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
     });
 
-    if (resp.status != 200) {
-        isChecking = false;
-        user = null;
-        return null;
+    if (!resp.ok) {
+        return user;
+    }
+    const data = await resp.json();
+
+    const convertionResp = await UserSchema.safeParseAsync(data);
+
+    if (!convertionResp.success) {
+        console.error(convertionResp.error);
+        return user;
     }
 
-    const convertionResp = await UserSchemaZod.safeParseAsync(
-        await resp.json(),
-    );
-
-    if (convertionResp.error) {
-        isChecking = false;
-        user = null;
-        return null;
-    }
-
-    user = convertionResp.data;
-    isChecking = false;
-
-    return user;
-}
-
-export function getUser() {
+    user.value = convertionResp.data;
     return user;
 }
 
@@ -61,7 +51,7 @@ export async function login(
         }),
     });
 
-    if (resp.status != 200) {
+    if (!resp.ok) {
         return { error: true };
     }
 
@@ -74,7 +64,9 @@ export async function login(
 }
 
 export async function logout() {
-    localStorage.clear();
+    // Imposto user a null per farlo sloggare
+    user.value = null;
+    localStorage.setItem("token", "");
 }
 
 export async function register(
@@ -98,9 +90,7 @@ export async function register(
         }),
     });
 
-    console.log(await resp.json());
-
-    if (resp.status != 200) {
+    if (!resp.ok) {
         return { error: true };
     }
 

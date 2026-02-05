@@ -3,7 +3,7 @@ import userRoutes from "./routes/users.js";
 import meRoutes from "./routes/me.js";
 import operatorRouter from "./routes/operator.js";
 import placesRouter from "./routes/places.js";
-import heatMapRouter from "./routes/heatmapMissions.js"
+import heatMapRouter from "./routes/heatmap.js"
 import {
     USERS_ENDPOINT,
     ME_ENDPOINT,

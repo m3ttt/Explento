@@ -1,19 +1,72 @@
 <template>
-  <div id="map"></div>
+  <div class="relative w-full h-screen">
+    <div class="fixed top-6 right-6 z-[1000]">
+      <button 
+        @click="exportToJson" 
+        class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow transition cursor-pointer"
+      >
+        Export JSON
+      </button>
+    </div>
+
+    <div id="map"></div>
+    
+    <div class="fixed bottom-6 left-0 right-0 z-[1000] flex justify-center">
+      <NavbarOperator />
+    </div>
+    
+  </div>
 </template>
 
 <script setup>
-import { onMounted } from "vue";
+import { onMounted, ref} from "vue";
+
 import L from "leaflet";
 import "leaflet.heat";
 import "leaflet/dist/leaflet.css";
+import NavbarOperator from "../components/NavbarOperator.vue";
 
 // Funzione per recuperare i dati della heatmap
 async function fetchHeatmapData() {
-  const res = await fetch("http://localhost:3000/api/v1/heatmap/missions");
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Utente non autenticato");
+  
+  const res = await fetch("http://localhost:3000/api/v1/heatmap/missions", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return await res.json();
 }
+
+const heatmapData = ref([]);
+
+// Funzione per scaricare il file
+const exportToJson = () => {
+  if (!heatmapData.value || heatmapData.value.length === 0) {
+    return alert("Nessun dato da esportare");
+  }
+
+  // Crea un Blob (Binary Large Object) per gestire file di qualsiasi dimensione
+  const blob = new Blob([JSON.stringify(heatmapData.value, null, 2)], {
+    type: "application/json",
+  });
+  
+  const url = URL.createObjectURL(blob);
+  const linkElement = document.createElement("a");
+  
+  linkElement.href = url;
+  linkElement.download = "heatmap_data.json";
+  
+  document.body.appendChild(linkElement);
+  linkElement.click();
+  
+  // Pulizia
+  document.body.removeChild(linkElement);
+  URL.revokeObjectURL(url);
+};
 
 onMounted(async () => {
   // Inizializza la mappa
@@ -28,6 +81,8 @@ onMounted(async () => {
   // Recupera dati
   const data = await fetchHeatmapData();
   if (!data.length) return;
+
+  heatmapData.value = data;
 
   // Calcola il valore massimo per normalizzare l'intensità
   const maxVal = Math.max(...data.map((p) => p.completedMissions), 1);
@@ -87,7 +142,7 @@ onMounted(async () => {
       //   .addTo(map);
       L.marker([lat, lon])
         .bindPopup(
-          `${place.name}: ${place.completedMissions} missioni completate`
+          `${place.name}: ${place.completedMissions} missioni completate`,
         )
         .addTo(map);
     }
