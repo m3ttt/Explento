@@ -47,20 +47,23 @@ export const router = createRouter({
 });
 
 router.beforeEach(async (to, _, next) => {
-    const operator = await checkAuthOp();
-    if (to.path == "/operator/login" && operator.value) {
-        return next("/operator");
-    }
-
-    if (to.meta.operatorAuth) {
-        if (!operator.value) {
-            return next("/operator/login");
+    // Se route operatore faccio auth operatore
+    if (to.path.startsWith("/operator")) {
+        const operator = await checkAuthOp();
+        if (to.path == "/operator/login" && operator.value) {
+            return next("/operator");
         }
 
-        to.meta.currentOperator = operator;
+        if (to.meta.operatorAuth) {
+            if (!operator.value) {
+                return next("/operator/login");
+            }
+            to.meta.currentOperator = operator;
+        }
         return next();
     }
 
+    // Route utente
     const user = await checkAuth();
 
     // Redirect utente se prova a fare /login ma autenticato
@@ -80,8 +83,6 @@ router.beforeEach(async (to, _, next) => {
             to.path != "/survey"
         )
             return next("/survey");
-
-        return next();
     }
 
     return next();
