@@ -16,7 +16,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, Settings2 } from "lucide-vue-next";
+import {
+    LogOut,
+    Settings2,
+    Trophy,
+    Star,
+    MapPin,
+    Sparkles,
+} from "lucide-vue-next";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { formatCategory } from "@/lib/utils";
@@ -52,9 +59,22 @@ const goToSurvey = () => {
         v-if="user.value"
     >
         <CardHeader class="flex flex-col items-center pb-4 w-full">
-            <Avatar class="w-24 h-24 mb-3 border-2 border-muted">
-                <AvatarImage :src="avatar" :alt="user.value.username" />
-            </Avatar>
+            <div class="relative flex flex-col items-center mb-6">
+                <div :class="['p-1 rounded-full transition-all duration-500']">
+                    <Avatar class="w-24 h-24 border-4 border-background">
+                        <AvatarImage :src="avatar" :alt="user.value.username" />
+                    </Avatar>
+                </div>
+
+                <div
+                    v-if="user.value.expert"
+                    class="absolute -bottom-3 bg-yellow-700 text-white text-sm font-bold px-3 py-1 rounded-full border-2 border-background shadow-lg flex items-center gap-1 uppercase"
+                >
+                    <Star class="w-3 h-3 fill-current" />
+                    Esperto
+                </div>
+            </div>
+
             <div class="text-center space-y-1">
                 <CardTitle class="text-2xl font-bold tracking-tight">
                     {{ user.value.username }}
@@ -64,6 +84,37 @@ const goToSurvey = () => {
                 >
                     {{ user.value.name }} {{ user.value.surname }}
                 </CardDescription>
+            </div>
+
+            <div class="flex gap-3 mt-4">
+                <div
+                    class="flex flex-col items-center bg-muted/40 px-5 py-2 rounded-2xl border border-border/50"
+                >
+                    <div class="flex items-center gap-1.5 text-primary">
+                        <Sparkles class="w-4 h-4" />
+                        <span class="font-bold text-lg leading-none">{{
+                            user.value.exp
+                        }}</span>
+                    </div>
+                    <span
+                        class="text-[9px] uppercase text-muted-foreground font-bold tracking-tighter mt-1"
+                        >Esperienza</span
+                    >
+                </div>
+                <div
+                    class="flex flex-col items-center bg-muted/40 px-5 py-2 rounded-2xl border border-border/50"
+                >
+                    <div class="flex items-center gap-1.5 text-blue-500">
+                        <MapPin class="w-4 h-4" />
+                        <span class="font-bold text-lg leading-none">{{
+                            user.value.visitedPlaces?.length || 0
+                        }}</span>
+                    </div>
+                    <span
+                        class="text-[9px] uppercase text-muted-foreground font-bold tracking-tighter mt-1"
+                        >Visitati</span
+                    >
+                </div>
             </div>
         </CardHeader>
 
@@ -83,17 +134,17 @@ const goToSurvey = () => {
                                 ? 'default'
                                 : 'secondary'
                         "
-                        class="text-[10px] px-2 py-0 gap-1 h-5"
+                        class="text-[10px] px-2 py-0 h-5"
                     >
                         {{
                             user.value.preferences?.alsoPaid
-                                ? "Luoghi anche a pagamento"
-                                : "Luoghi gratutiti"
+                                ? "Anche a pagamento"
+                                : "Solo Gratuiti"
                         }}
                     </Badge>
                 </div>
 
-                <div class="flex flex-wrap gap-2 justify-center py-1">
+                <div class="flex flex-wrap gap-2 justify-center">
                     <template v-if="user.value.preferences?.categories?.length">
                         <Badge
                             v-for="cat in user.value.preferences.categories"
@@ -109,11 +160,11 @@ const goToSurvey = () => {
                     </p>
                 </div>
 
-                <div class="flex justify-center w-full pt-2">
+                <div class="flex justify-center pt-1">
                     <Button
                         variant="outline"
                         size="sm"
-                        class="text-xs gap-2 h-8 border-dashed hover:border-primary hover:text-primary transition-colors"
+                        class="text-xs gap-2 h-8 border-dashed"
                         @click="goToSurvey"
                     >
                         <Settings2 class="w-3.5 h-3.5" />
@@ -121,19 +172,17 @@ const goToSurvey = () => {
                     </Button>
                 </div>
             </div>
-
-            <Separator />
         </CardContent>
 
-        <CardFooter class="flex flex-col gap-2 w-full pt-0">
+        <CardFooter class="w-full pt-4">
             <Button
                 variant="ghost"
                 size="sm"
-                class="w-full gap-2 text-muted-foreground hover:text-destructive transition-colors"
+                class="w-full gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
                 @click="handleLogout"
             >
                 <LogOut class="w-4 h-4" />
-                Logout
+                Logout Account
             </Button>
         </CardFooter>
     </Card>
