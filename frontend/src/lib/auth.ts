@@ -96,3 +96,29 @@ export async function register(
 
     return { error: false };
 }
+
+export async function refreshUser() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+        user.value = null;
+        return;
+    }
+
+    const resp = await fetch(`${API_ENDPOINT}/me`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!resp.ok) {
+        user.value = null;
+        return;
+    }
+
+    const data = await resp.json();
+    const parsed = await UserSchema.safeParseAsync(data);
+
+    if (parsed.success) {
+        user.value = parsed.data;
+    }
+}
