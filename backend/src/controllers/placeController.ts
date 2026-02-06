@@ -1,9 +1,8 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import { AuthRequest } from "../routes/auth.js";
 import { Place } from "../models/Place.js";
 import { PlaceEditRequest } from "../models/PlaceEditRequest.js";
 import type { ParsedQs } from "qs";
-import mongoose from "mongoose";
 
 const getDistanceFromLatLonInKm = (
     lat1: number,
@@ -28,21 +27,27 @@ export const getPlaces = async (req: AuthRequest, res: Response) => {
     try {
         let allPlaces;
 
+        // Ottengo gli id dei posti già visitati
+        const visitedPlaceIds =
+            req.user?.visitedPlaces?.map((vp) => vp.placeId) || [];
+
+        let filter: any = {
+            _id: { $nin: visitedPlaceIds },
+        };
+
         if (
             req.user?.preferences &&
             req.user?.preferences?.categories.length != 0
         ) {
-            const filter: any = {
+            filter.categories = {
                 // TODO: Capire se mettere $in o $all
-                categories: { $in: req.user.preferences.categories },
+                $in: req.user.preferences.categories,
             };
 
             if (!req.user.preferences.alsoPaid) filter.isFree = true;
-
-            allPlaces = await Place.find(filter).lean();
-        } else {
-            allPlaces = await Place.find().lean();
         }
+
+        allPlaces = await Place.find(filter).lean();
 
         const { lat, lon, radius } = req.query;
 

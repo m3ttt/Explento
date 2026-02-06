@@ -21,7 +21,7 @@ export const UserSchema = z.object({
             z.object({
                 placeId: z.string(),
                 visited: z.boolean(),
-                date: z.date().optional(),
+                date: z.string().optional(),
             }),
         )
         .optional(),
