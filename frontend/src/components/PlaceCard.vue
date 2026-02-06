@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Place } from "@/lib/types/place";
 import { formatCategory } from "@/lib/utils";
 import { toast } from "vue-sonner";
+import { API_ENDPOINT } from "@/lib/config";
+import { getPosition } from "@/lib/position";
 
 const props = defineProps<{
     place: Place;
@@ -13,6 +15,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: "edit", place: Place): void;
+    (e: "completed", place: Place): void;
 }>();
 
 const parsedCategories = computed(() => {
@@ -25,6 +28,32 @@ const handleEdit = () => {
 };
 
 const isTooFar = computed(() => props.place.distance > 0.02);
+
+const sendCompletedPlace = async () => {
+    const position = await getPosition();
+
+    const resp = await fetch(
+        `${API_ENDPOINT}/me/visit?placeId=${props.place._id}`,
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                lat: position.coords.latitude,
+                lon: position.coords.longitude,
+            }),
+        },
+    );
+
+    if (resp.ok) {
+        emit("completed", props.place);
+        return toast.success("Luogo completato. Assegnati +5EXP");
+    }
+
+    return toast.error(`Errore: ${(await resp.json())["error"]}`);
+};
 </script>
 
 <template>
@@ -80,7 +109,7 @@ const isTooFar = computed(() => props.place.distance > 0.02);
         <!-- Placeholder momentaneo -->
         <Button
             :disabled="isTooFar"
-            @click="toast.success('Luogo completato. Assegnati 5EXP')"
+            @click="sendCompletedPlace"
             :variant="isTooFar ? 'outline' : 'default'"
         >
             {{ !isTooFar ? "Completa Luogo" : "Troppo distante" }}

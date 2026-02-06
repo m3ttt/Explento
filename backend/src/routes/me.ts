@@ -12,8 +12,8 @@ router.use(authenticate);
 // GET /me
 router.get("", getMeInformation);
 
-// GET /me/visit/:id:
-router.post("/visit/:id", triggerVisitPlace);
+// GET /me/visit
+router.post("/visit", triggerVisitPlace);
 router.post("/preferences", updatePreferences);
 
 export default router;
