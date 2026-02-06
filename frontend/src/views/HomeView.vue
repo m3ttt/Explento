@@ -70,6 +70,12 @@ onBeforeMount(async () => {
         position.coords.longitude,
     );
 });
+
+const removePlaceFromList = (place: Place) => {
+    places.value = places.value.filter((p) => {
+        return p._id != place._id;
+    });
+};
 </script>
 
 <template>
@@ -99,6 +105,7 @@ onBeforeMount(async () => {
                                 )
                             "
                             @edit="openEdit"
+                            @completed="removePlaceFromList"
                         />
                     </div>
                 </div>
