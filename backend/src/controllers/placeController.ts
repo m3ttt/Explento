@@ -323,3 +323,13 @@ async function validatePlaceUpdate(
 
     return null;
 }
+
+export async function getPlaceById(req: AuthRequest, resp: Response) {
+    if (!req.params)
+        return resp.status(400).json({ error: "Inserire id luogo" });
+
+    const place = await Place.findById(req.params.id);
+    if (!place) return resp.status(400).json({ error: "Luogo non trovato" });
+
+    return resp.status(200).json(place);
+}
