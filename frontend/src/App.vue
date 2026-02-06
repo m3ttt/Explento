@@ -1,3 +1,8 @@
+<script setup lang="ts">
+import "vue-sonner/style.css";
+import { Toaster } from "@/components/ui/sonner";
+</script>
+
 <script lang="ts">
 export default {
     name: "App",
@@ -8,4 +13,5 @@ export default {
     <main>
         <RouterView />
     </main>
+    <Toaster position="top-center" />
 </template>

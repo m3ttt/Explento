@@ -18,6 +18,10 @@ import type { ParsedQs } from "qs";
 export const triggerVisitPlace = async (req: AuthRequest, resp: Response) => {
     if (!req.user) return;
 
+    if (!req.query) return resp.status(400).json({ error: "Manca placeId" });
+    if (!req.body)
+        return resp.status(400).json({ error: "Mancano coordinate GPS" });
+
     const validationError = await validateVisit(
         req.query.placeId,
         req.body.lat,
@@ -35,6 +39,8 @@ export const triggerVisitPlace = async (req: AuthRequest, resp: Response) => {
 
     await recordVisit(req.user, placeId);
     await updateMissionsProgress(req.user, placeId);
+
+    // TODO: Assegnare EXP utente
 
     await req.user.save();
 
@@ -100,6 +106,8 @@ async function recordVisit(user: UserType, placeId: string) {
 }
 
 async function updateMissionsProgress(user: UserType, placeId: string) {
+    // TODO: Controllare anche secondo tipo missione per categoria
+
     for (const missionProgress of user.missionsProgresses) {
         // se la missione è già completata, salto
         if (missionProgress.completed) continue;
