@@ -8,6 +8,7 @@ import { formatCategory } from "@/lib/utils";
 import { toast } from "vue-sonner";
 import { API_ENDPOINT } from "@/lib/config";
 import { getPosition } from "@/lib/position";
+import { refreshUser } from "@/lib/auth";
 
 const props = defineProps<{
     place: Place;
@@ -48,6 +49,8 @@ const sendCompletedPlace = async () => {
     );
 
     if (resp.ok) {
+        // Luogo completato, refresho l'utente per vedere l'EXP aggiornata senza dover ricaricare
+        refreshUser();
         emit("completed", props.place);
         return toast.success("Luogo completato. Assegnati +5EXP");
     }
