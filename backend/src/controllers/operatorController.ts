@@ -2,10 +2,12 @@ import { Request, Response } from "express";
 import { Operator } from "../models/Operator.js";
 import { compare } from "bcrypt";
 import pkg from "jsonwebtoken";
-import { OperatorAuthRequest } from "../routes/operator.js";
+const { sign } = pkg;
 import { PlaceEditRequest } from "../models/PlaceEditRequest.js";
 import { Place } from "../models/Place.js";
-const { sign } = pkg;
+import { User } from "../models/User.js";
+
+import type { OperatorAuthRequest } from "../routes/operator.js";
 
 export const loginOperator = async (req: Request, resp: Response) => {
     const { email, password } = req.body;
@@ -31,7 +33,7 @@ export const loginOperator = async (req: Request, resp: Response) => {
     // Creo un JWT token
     // NOTE: Cambiare tempo validità??
     const token = sign(
-        { id: foundOperator.id, role: "operator" },
+        { id: foundOperator._id.toString(), role: "operator" },
         process.env.JWT_SECRET as string,
         {
             expiresIn: "24h",
@@ -45,14 +47,34 @@ export const getAllPlaceEdits = async (
     req: OperatorAuthRequest,
     resp: Response,
 ) => {
-    const { placeId } = req.query;
+    const { placeId, status, isNewPlace } = req.query;
 
-    let reqs;
-    if (placeId != "") {
-        reqs = await PlaceEditRequest.find({ placeId: placeId });
-    } else {
-        reqs = await PlaceEditRequest.find();
+    let query: Record<string, any> = {};
+
+    // filtro ID luogo
+    if (placeId) query.placeId = placeId;
+
+    // filtro stato
+    if (status) {
+        const allowedStatuses = ["pending", "approved", "rejected"];
+        if (!allowedStatuses.includes(status as string)) {
+            return resp.status(400).json({ message: "Stato non valido per il filtro" });
+        }
+        query.status = status;
     }
+
+    // filtro nuovo luogo
+    if (isNewPlace !== undefined) {
+        if (isNewPlace !== "true" && isNewPlace !== "false") {
+            return resp
+                .status(400)
+                .json({ message: "Valore non valido per isNewPlace (usa true/false)" });
+        }
+
+        query.isNewPlace = isNewPlace === "true";
+    }
+
+    const reqs = await PlaceEditRequest.find(query);
 
     return resp.status(200).json(reqs);
 };
@@ -81,55 +103,72 @@ export const updatePlaceEdits = async (
     req: OperatorAuthRequest,
     resp: Response,
 ) => {
+    const XP_PER_APPROVED_REQUEST = 10;
+
     const { id } = req.params;
-    if (!id) {
-        return resp.status(400).json({ message: "Nessun id inserito" });
-    }
-
-    if (!req.operator) {
-        return resp.status(401).json({ message: "Operatore non autenticato" });
-    }
-
     const { status, operatorComment } = req.body;
+
+    if (!id) return resp.status(400).json({ message: "Nessun id inserito" });
+    if (!req.operator) return resp.status(401).json({ message: "Operatore non autenticato" });
 
     const allowedStatuses = ["pending", "approved", "rejected"];
     if (!allowedStatuses.includes(status)) {
         return resp.status(400).json({ message: "Stato non valido" });
     }
 
-    // Recupero la richiesta di modifica
     const editRequest = await PlaceEditRequest.findById(id);
     if (!editRequest) {
-        return resp
-            .status(404)
-            .json({ message: "PlaceEditRequest non trovata" });
+        return resp.status(404).json({ message: "Richiesta non trovata" });
     }
 
+    if (editRequest.status !== "pending") {
+        return resp.status(400).json({ message: `Richiesta già ${editRequest.status}` });
+    }
+
+    // Aggiorna metadati della richiesta
     editRequest.status = status;
-
-    if (operatorComment) {
-        editRequest.operatorComment = operatorComment;
-    }
+    editRequest.operatorComment = operatorComment || "";
+    editRequest.operatorId = req.operator._id; // Utilizza id operatore preso dalla request
 
     if (status === "approved") {
-        const place = await Place.findById(editRequest.placeId);
-        if (!place) {
-            return resp
-                .status(404)
-                .json({ message: "Place originale non trovato" });
+        if (editRequest.isNewPlace) { // Nuovo luogo aggiunto
+            // Crea istanza del modello Place con i dati proposti
+            const newPlace = new Place(editRequest.proposedChanges);
+            const savedPlace = await newPlace.save();
+            
+            // Collega richiesta al nuovo luogo appena creato
+            editRequest.placeId = savedPlace._id;
+            
+            // Assegna Exp all'utente
+            await User.findByIdAndUpdate(
+                editRequest.userId,
+                { $inc: { exp: 3 * XP_PER_APPROVED_REQUEST } }
+            );
+        } else { // Modifica luogo esistente
+            const place = await Place.findById(editRequest.placeId);
+            if (!place) {
+                return resp.status(404).json({ message: "Place originale non trovato" });
+            }
+
+            // Mongoose Merge: aggiorna solo i campi presenti in proposedChanges
+            Object.assign(place, editRequest.proposedChanges);
+            
+            await place.save();
+
+            // Assegna Exp all'utente
+            await User.findByIdAndUpdate(
+                editRequest.userId,
+                { $inc: { exp: XP_PER_APPROVED_REQUEST } }
+            );
         }
-
-        // Applica modifiche come merge al posto che fa riferimento
-        Object.assign(place, editRequest.proposedChanges);
-
-        await place.save();
     }
 
     await editRequest.save();
 
-    return resp
-        .status(200)
-        .json({ message: "Richiesta aggiornata correttamente" });
+    return resp.status(200).json({ 
+        message: "Richiesta processata con successo",
+        status: editRequest.status 
+    });
 };
 
 export const meOperator = async (req: OperatorAuthRequest, resp: Response) => {

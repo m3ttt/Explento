@@ -1,4 +1,4 @@
-import { Schema, model, InferSchemaType } from "mongoose";
+import { Schema, model, InferSchemaType, HydratedDocument } from "mongoose";
 
 const OperatorSchema = new Schema({
     email: { type: String, required: true },
@@ -10,6 +10,7 @@ const OperatorSchema = new Schema({
 
 // Tipo TypeScript del documento
 export type OperatorType = InferSchemaType<typeof OperatorSchema>;
+export type OperatorDocument = HydratedDocument<OperatorType>;
 
 // Modello Mongoose
 export const Operator = model("Operator", OperatorSchema);

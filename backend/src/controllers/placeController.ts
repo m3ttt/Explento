@@ -3,6 +3,7 @@ import { AuthRequest } from "../routes/auth.js";
 import { Place } from "../models/Place.js";
 import { PlaceEditRequest } from "../models/PlaceEditRequest.js";
 import type { ParsedQs } from "qs";
+import mongoose from "mongoose";
 
 const getDistanceFromLatLonInKm = (
     lat1: number,
@@ -97,7 +98,8 @@ function validatePlaceBase(
     if (name.length < 3) return "Nome troppo corto";
     if (name.length > 100) return "Nome troppo lungo";
 
-    if (!categories || !Array.isArray(categories) || categories.length === 0)
+    // Solo 3 categorie al massimo, e anche minimo 3 categorie
+    if (!categories || !Array.isArray(categories) || categories.length !== 3)
         return "Categorie non valide";
 
     for (const cat of categories) {
@@ -156,6 +158,10 @@ export const createAddPlaceRequest = async (
     if (!req.user)
         return res.status(401).json({ message: "Utente non autenticato" });
 
+    if(!req.user?.expert) {
+        return res.status(401).json({ message: "Utente non esperto" });
+    }
+
     try {
         const { name, description, categories, location, images, isFree } =
             req.body;
@@ -189,6 +195,7 @@ export const createAddPlaceRequest = async (
             userId: req.user._id,
             proposedChanges: {
                 name,
+                normalizedName: normalized,
                 description,
                 categories,
                 location,

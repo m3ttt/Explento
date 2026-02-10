@@ -32,6 +32,7 @@ const UserSchema = new Schema({
     },
     expert: { type: Boolean, default: false },
     exp: { type: Number, default: 0 },
+    // TODO: Inserire data iscrizione
 
     visitedPlaces: [
         {
@@ -39,10 +40,6 @@ const UserSchema = new Schema({
                 type: Schema.Types.ObjectId,
                 ref: "Place",
                 required: true,
-            },
-            visited: {
-                type: Boolean,
-                default: false,
             },
             date: {
                 type: Date,
