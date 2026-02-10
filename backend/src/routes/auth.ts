@@ -5,7 +5,7 @@ import { Document } from "mongoose";
 import { loginUser, registerUser } from "../controllers/authController.js";
 
 export interface AuthRequest extends Request {
-    user?: UserType & Document;
+    user?: UserType;
 }
 
 export async function authenticate(

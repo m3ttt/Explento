@@ -58,7 +58,9 @@ export const getAllPlaceEdits = async (
     if (status) {
         const allowedStatuses = ["pending", "approved", "rejected"];
         if (!allowedStatuses.includes(status as string)) {
-            return resp.status(400).json({ message: "Stato non valido per il filtro" });
+            return resp
+                .status(400)
+                .json({ message: "Stato non valido per il filtro" });
         }
         query.status = status;
     }
@@ -66,9 +68,9 @@ export const getAllPlaceEdits = async (
     // filtro nuovo luogo
     if (isNewPlace !== undefined) {
         if (isNewPlace !== "true" && isNewPlace !== "false") {
-            return resp
-                .status(400)
-                .json({ message: "Valore non valido per isNewPlace (usa true/false)" });
+            return resp.status(400).json({
+                message: "Valore non valido per isNewPlace (usa true/false)",
+            });
         }
 
         query.isNewPlace = isNewPlace === "true";
@@ -109,7 +111,8 @@ export const updatePlaceEdits = async (
     const { status, operatorComment } = req.body;
 
     if (!id) return resp.status(400).json({ message: "Nessun id inserito" });
-    if (!req.operator) return resp.status(401).json({ message: "Operatore non autenticato" });
+    if (!req.operator)
+        return resp.status(401).json({ message: "Operatore non autenticato" });
 
     const allowedStatuses = ["pending", "approved", "rejected"];
     if (!allowedStatuses.includes(status)) {
@@ -122,7 +125,9 @@ export const updatePlaceEdits = async (
     }
 
     if (editRequest.status !== "pending") {
-        return resp.status(400).json({ message: `Richiesta già ${editRequest.status}` });
+        return resp
+            .status(400)
+            .json({ message: `Richiesta già ${editRequest.status}` });
     }
 
     // Aggiorna metadati della richiesta
@@ -130,44 +135,48 @@ export const updatePlaceEdits = async (
     editRequest.operatorComment = operatorComment || "";
     editRequest.operatorId = req.operator._id; // Utilizza id operatore preso dalla request
 
+    const user = await User.findById(editRequest.userId);
+    if (!user)
+        return resp
+            .status(400)
+            .json({ error: "Utente collegato alla richiesta non trovato" });
+
     if (status === "approved") {
-        if (editRequest.isNewPlace) { // Nuovo luogo aggiunto
+        if (editRequest.isNewPlace) {
+            // Nuovo luogo aggiunto
             // Crea istanza del modello Place con i dati proposti
             const newPlace = new Place(editRequest.proposedChanges);
             const savedPlace = await newPlace.save();
-            
+
             // Collega richiesta al nuovo luogo appena creato
             editRequest.placeId = savedPlace._id;
-            
+
             // Assegna Exp all'utente
-            await User.findByIdAndUpdate(
-                editRequest.userId,
-                { $inc: { exp: 3 * XP_PER_APPROVED_REQUEST } }
-            );
-        } else { // Modifica luogo esistente
+            user.addEXP(3 * XP_PER_APPROVED_REQUEST);
+        } else {
+            // Modifica luogo esistente
             const place = await Place.findById(editRequest.placeId);
             if (!place) {
-                return resp.status(404).json({ message: "Place originale non trovato" });
+                return resp
+                    .status(404)
+                    .json({ message: "Place originale non trovato" });
             }
 
             // Mongoose Merge: aggiorna solo i campi presenti in proposedChanges
             Object.assign(place, editRequest.proposedChanges);
-            
+
             await place.save();
 
             // Assegna Exp all'utente
-            await User.findByIdAndUpdate(
-                editRequest.userId,
-                { $inc: { exp: XP_PER_APPROVED_REQUEST } }
-            );
+            user.addEXP(XP_PER_APPROVED_REQUEST);
         }
     }
 
     await editRequest.save();
 
-    return resp.status(200).json({ 
+    return resp.status(200).json({
         message: "Richiesta processata con successo",
-        status: editRequest.status 
+        status: editRequest.status,
     });
 };
 

@@ -39,10 +39,9 @@ export const triggerVisitPlace = async (req: AuthRequest, resp: Response) => {
 
     await recordVisit(req.user, placeId);
     await updateMissionsProgress(req.user, placeId);
-
-    // TODO: Assegnare EXP utente
-
     await req.user.save();
+
+    req.user.addEXP(5);
 
     return resp.status(200).json({ success: true });
 };
