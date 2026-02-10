@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed } from "vue";
 import { MapPin, Ticket, Pencil } from "lucide-vue-next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ const handleEdit = () => {
   emit("edit", props.place);
 };
 
+// Distanza in metri (20 metri max, definito nel D1)
 const isTooFar = computed(() => props.place.distance > 20);
 
 const sendCompletedPlace = async () => {
@@ -108,7 +109,6 @@ const sendCompletedPlace = async () => {
         </div>
       </div>
     </div>
-    <!-- Placeholder momentaneo -->
     <Button
       :disabled="isTooFar"
       @click="sendCompletedPlace"
