@@ -30,7 +30,7 @@ paths:
               required: [username, password]
       responses:
         "200":
-          description: Login effettuato
+          description: Login effettuato, restituisce JWT
           content:
             application/json:
               schema:
@@ -38,8 +38,12 @@ paths:
                 properties:
                   token:
                     type: string
-        "401":
+        "400":
           description: Credenziali non valide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/register:
     post:
@@ -66,8 +70,16 @@ paths:
       responses:
         "201":
           description: Utente registrato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
         "400":
           description: Dati non validi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   ##########################
   # ME
@@ -88,6 +100,10 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           description: Non autorizzato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /me/visit/{id}:
     post:
@@ -99,7 +115,8 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -120,11 +137,57 @@ paths:
               schema:
                 type: object
                 properties:
-                  success: { type: boolean }
+                  success:
+                    type: boolean
         "400":
           description: Errore di validazione
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Non autorizzato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /me/preferences:
+    post:
+      summary: Aggiorna le preferenze dell'utente
+      tags: [Me]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                alsoPaid:
+                  type: boolean
+                categories:
+                  type: array
+                  items:
+                    type: string
+              required: [alsoPaid, categories]
+      responses:
+        "200":
+          description: Preferenze aggiornate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "400":
+          description: Dati mancanti o non validi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   ##########################
   # USERS
@@ -141,13 +204,24 @@ paths:
             type: boolean
       responses:
         "200":
-          description: Lista utenti
+          description: Lista utenti in formato pubblico
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/User"
+                  type: object
+                  properties:
+                    self:
+                      type: string
+                    username:
+                      type: string
+                    exp:
+                      type: number
+                    profileImage:
+                      type: string
+        "500":
+          description: Errore server
 
   /users/{username}:
     get:
@@ -161,13 +235,26 @@ paths:
             type: string
       responses:
         "200":
-          description: Utente trovato
+          description: Utente trovato in formato pubblico
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                type: object
+                properties:
+                  self:
+                    type: string
+                  username:
+                    type: string
+                  exp:
+                    type: number
+                  profileImage:
+                    type: string
         "404":
           description: Utente non trovato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   ##########################
   # OPERATOR
@@ -191,16 +278,61 @@ paths:
               required: [email, password]
       responses:
         "200":
-          description: Login effettuato
-        "401":
+          description: Login effettuato, restituisce JWT
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        "400":
           description: Credenziali non valide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
-  /operator/place_edit_requests:
+  /operator/me:
     get:
-      summary: Ottieni tutte le richieste di modifica luogo
+      summary: Ottieni informazioni operatore autenticato
       tags: [Operator]
       security:
         - bearerAuth: []
+      responses:
+        "200":
+          description: Operatore trovato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Operator"
+        "401":
+          description: Non autorizzato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /operator/place_edit_requests:
+    get:
+      summary: Ottieni richieste di modifica luoghi
+      tags: [Operator]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: placeId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+        - name: isNewPlace
+          in: query
+          schema:
+            type: boolean
       responses:
         "200":
           description: Lista richieste
@@ -210,10 +342,16 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PlaceEdit"
+        "400":
+          description: Parametri non validi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /operator/place_edit_requests/{id}:
     get:
-      summary: Ottieni una specifica richiesta di modifica
+      summary: Ottieni richiesta di modifica specifica
       tags: [Operator]
       security:
         - bearerAuth: []
@@ -237,8 +375,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-    post:
-      summary: Aggiorna lo stato di una richiesta di modifica
+    patch:
+      summary: Aggiorna stato richiesta
       tags: [Operator]
       security:
         - bearerAuth: []
@@ -268,7 +406,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  message: { type: string }
+                  message:
+                    type: string
+                  status:
+                    type: string
         "400":
           description: Errore richiesta non valida
           content:
@@ -277,6 +418,186 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Richiesta non trovata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  ##########################
+  # PLACES
+  ##########################
+
+  /places:
+    get:
+      summary: Lista tutti i luoghi
+      tags: [Places]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lat
+          in: query
+          schema: { type: number }
+        - name: lon
+          in: query
+          schema: { type: number }
+        - name: radius
+          in: query
+          schema: { type: number }
+      responses:
+        "200":
+          description: Lista luoghi filtrata
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Place"
+        "500":
+          description: Errore server
+
+  /places/request:
+    post:
+      summary: Richiesta nuovo luogo
+      tags: [Places]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                categories:
+                  type: array
+                  items: { type: string }
+                location:
+                  type: object
+                  properties:
+                    lat: { type: number }
+                    lon: { type: number }
+                images:
+                  type: array
+                  items: { type: string }
+                isFree: { type: boolean }
+              required: [name, description, categories, location, isFree]
+      responses:
+        "201":
+          description: Richiesta creata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  request:
+                    $ref: "#/components/schemas/PlaceEdit"
+        "400":
+          description: Dati non validi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Utente non autenticato o non esperto
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /places/{id}:
+    put:
+      summary: Richiesta modifica luogo esistente
+      tags: [Places]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                categories:
+                  type: array
+                  items: { type: string }
+                location:
+                  type: object
+                  properties:
+                    lat: { type: number }
+                    lon: { type: number }
+                images:
+                  type: array
+                  items: { type: string }
+                isFree: { type: boolean }
+      responses:
+        "201":
+          description: Richiesta modifica inviata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  request:
+                    $ref: "#/components/schemas/PlaceEdit"
+        "400":
+          description: Dati non validi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Utente non autenticato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  ##########################
+  # HEATMAP
+  ##########################
+
+  /heatmap/missions:
+    get:
+      summary: Heatmap delle missioni completate per luogo
+      tags: [Heatmap]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista luoghi con conteggio missioni completate
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    placeId:
+                      type: string
+                    completedMissions:
+                      type: number
+                    name:
+                      type: string
+                    location:
+                      type: object
+                      properties:
+                        lat: { type: number }
+                        lon: { type: number }
+        "500":
+          description: Errore server
           content:
             application/json:
               schema:
@@ -292,10 +613,6 @@ components:
 
   schemas:
 
-    ##########################
-    # USER
-    ##########################
-
     User:
       type: object
       properties:
@@ -306,8 +623,12 @@ components:
         surname: { type: string }
         profileImage: { type: string }
         preferences:
-          type: array
-          items: { type: string }
+          type: object
+          properties:
+            alsoPaid: { type: boolean }
+            categories:
+              type: array
+              items: { type: string }
         expert: { type: boolean }
         exp: { type: number }
         visitedPlaces:
@@ -345,10 +666,6 @@ components:
         progress: { type: number }
         completed: { type: boolean }
 
-    ##########################
-    # OPERATOR
-    ##########################
-
     Operator:
       type: object
       properties:
@@ -357,10 +674,6 @@ components:
         role: { type: string }
         name: { type: string }
         surname: { type: string }
-
-    ##########################
-    # PLACE
-    ##########################
 
     Place:
       type: object
@@ -381,33 +694,6 @@ components:
           items: { type: string }
         isFree: { type: boolean }
 
-    ##########################
-    # MISSIONS
-    ##########################
-
-    Mission:
-      type: object
-      properties:
-        id: { type: string }
-        name: { type: string }
-        description: { type: string }
-        minLevel: { type: number }
-        rewardExp: { type: number }
-        categories:
-          type: array
-          items: { type: string }
-        requiredPlaces:
-          type: array
-          items:
-            type: object
-            properties:
-              placeId: { type: string }
-        requiredCount: { type: number }
-
-    ##########################
-    # PLACE EDIT REQUEST
-    ##########################
-
     PlaceEdit:
       type: object
       properties:
@@ -421,6 +707,7 @@ components:
           enum: [pending, approved, rejected]
         operatorId: { type: string }
         operatorComment: { type: string }
+        isNewPlace: { type: boolean }
         createdAt:
           type: string
           format: date-time
@@ -433,4 +720,3 @@ components:
       properties:
         error:
           type: string
-
