@@ -1,19 +1,27 @@
 <script setup lang="ts">
-import { LayoutDashboard, Map, ClipboardCheck } from "lucide-vue-next";
+import { LayoutDashboard, Map, ClipboardCheck, User, Home, LayoutDashboardIcon } from "lucide-vue-next";
 import { Button } from "./ui/button";
 import { useRouter, useRoute } from "vue-router";
 import { computed } from "vue";
 
+// Definisce l'evento che la navbar invia al genitore
+const emit = defineEmits<{
+  (e: "change-tab", tab: string): void
+}>();
+
 const router = useRouter();
 const route = useRoute();
 
-// Funzione per cambiare pagina in base ai path definiti nel tuo router.ts
+// Determina quale tab è attiva guardando l'URL attuale
+const activeTab = computed(() => route.path);
+
+// Funzione per cambiare pagina
 const navigate = (path: string) => {
+  if (activeTab.value !== path) {
+    emit('change-tab', 'close-profile'); // chiude il profilo quando pagina cambia
+  }
   router.push(path);
 };
-
-// Determiniamo quale tab è attiva guardando l'URL attuale (route.path)
-const activeTab = computed(() => route.path);
 </script>
 
 <template>
@@ -24,7 +32,15 @@ const activeTab = computed(() => route.path);
       :class="['flex-1 rounded-full hover:bg-muted', activeTab === '/operator' ? 'bg-muted text-primary' : '']"
       @click="navigate('/operator')"
     >
-      <LayoutDashboard class="w-5 h-5" />
+      <Home class="w-5 h-5" />
+    </Button>
+
+    <Button
+      variant="ghost"
+      :class="['flex-1 rounded-full hover:bg-muted', activeTab === '/operator/requests' ? 'bg-muted text-primary' : '']"
+      @click="navigate('/operator/requests')"
+    >
+      <ClipboardCheck class="w-5 h-5" />
     </Button>
 
     <Button
@@ -37,10 +53,18 @@ const activeTab = computed(() => route.path);
 
     <Button
       variant="ghost"
-      :class="['flex-1 rounded-full hover:bg-muted', activeTab === '/operator/requests' ? 'bg-muted text-primary' : '']"
-      @click="navigate('/operator/requests')"
+      :class="['flex-1 rounded-full hover:bg-muted', activeTab === '/operator/dashboard' ? 'bg-muted text-primary' : '']"
+      @click="navigate('/operator/dashboard')"
     >
-      <ClipboardCheck class="w-5 h-5" />
+      <LayoutDashboardIcon class="w-5 h-5" />
+    </Button>
+
+    <Button
+      variant="ghost"
+      class="flex-1 rounded-full hover:bg-muted"
+      @click="emit('change-tab', 'profile')"
+    >
+      <User class="w-5 h-5" />
     </Button>
     
   </div>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { z } from "zod";
-import NavbarOperator from "../components/NavbarOperator.vue";
 
 // Componenti Shadcn
 import { Button } from "@/components/ui/button";
@@ -408,10 +407,6 @@ onMounted(fetchRequests);
 
     <div v-else class="text-center py-12 text-muted-foreground">
       Nessuna richiesta trovata con i filtri correnti.
-    </div>
-
-    <div class="fixed bottom-6 left-0 right-0 z-[1000] flex justify-center">
-      <NavbarOperator />
     </div>
   </div>
 </template>

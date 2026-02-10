@@ -11,10 +11,6 @@
 
     <div id="map"></div>
     
-    <div class="fixed bottom-6 left-0 right-0 z-[1000] flex justify-center">
-      <NavbarOperator />
-    </div>
-    
   </div>
 </template>
 
@@ -24,7 +20,6 @@ import { onMounted, ref} from "vue";
 import L from "leaflet";
 import "leaflet.heat";
 import "leaflet/dist/leaflet.css";
-import NavbarOperator from "../components/NavbarOperator.vue";
 
 // Funzione per recuperare i dati della heatmap
 async function fetchHeatmapData() {
@@ -102,7 +97,7 @@ onMounted(async () => {
 
   console.log("Heatmap data:", heatData);
 
-  // Aggiungi la heatmap e salva il layer in una variabile
+  // Aggiunge la heatmap e salva il layer in una variabile
   const heatLayer = L.heatLayer(heatData, {
     radius: 200, // grande per essere visibile anche da lontano
     blur: 60, // sfumatura ampia
