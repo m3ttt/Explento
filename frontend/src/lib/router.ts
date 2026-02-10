@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory, type RouteLocation } from "vue-router";
-import OperatorView from "../views/OperatorView.vue";
 import HomeView from "../views/HomeView.vue";
 import { checkAuth } from "./auth";
 import LoginView from "../views/LoginView.vue";
@@ -7,6 +6,11 @@ import RegisterView from "../views/RegisterView.vue";
 import OperatorLoginView from "../views/OperatorLoginView.vue";
 import { checkAuthOp } from "./operatorAuth";
 import SurveyView from "../views/SurveyView.vue";
+import HeatmapMissions from "../views/HeatmapMissions.vue";
+import OperatorRequests from "../views/OperatorRequests.vue";
+import OperatorHomeView from "../views/OperatorHomeView.vue";
+import OperatorLayout from "../components/OperatorLayout.vue";
+import MissionStats from "../views/MissionStats.vue";
 
 const routes = [
     {
@@ -17,13 +21,33 @@ const routes = [
             currentUser: route.meta.currentUser,
         }),
     },
+    // Gruppo operatore con layout
     {
         path: "/operator",
-        component: OperatorView,
+        component: OperatorLayout,
         meta: { operatorAuth: true },
         props: (route: RouteLocation) => ({
             currentOperator: route.meta.currentOperator,
         }),
+        children: [
+            {
+                path: "", // Corrisponde a /operator
+                component: OperatorHomeView,
+                meta: { hideNavbar: true },
+            },
+            {
+                path: "heatmap", // Corrisponde a /operator/heatmap
+                component: HeatmapMissions,
+            },
+            {
+                path: "dashboard",
+                component: MissionStats,
+            },
+            {
+                path: "requests",
+                component: OperatorRequests,
+            },
+        ]
     },
     {
         path: "/operator/login",

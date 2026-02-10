@@ -20,7 +20,6 @@ export const UserSchema = z.object({
         .array(
             z.object({
                 placeId: z.string(),
-                visited: z.boolean(),
                 date: z.string().optional(),
             }),
         )
