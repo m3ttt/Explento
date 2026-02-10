@@ -3,25 +3,29 @@ import { AuthRequest } from "../routes/auth.js";
 import { Place } from "../models/Place.js";
 import { PlaceEditRequest } from "../models/PlaceEditRequest.js";
 import type { ParsedQs } from "qs";
-import mongoose from "mongoose";
 
-const getDistanceFromLatLonInKm = (
+const getDistanceFromLatLonInMeters = (
     lat1: number,
     lon1: number,
     lat2: number,
     lon2: number,
-) => {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
+): number => {
+    const R = 6371000; // raggio della Terra in metri
+    const toRad = (value: number) => value * (Math.PI / 180);
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
     const a =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * (Math.PI / 180)) *
-            Math.cos(lat2 * (Math.PI / 180)) *
+        Math.cos(toRad(lat1)) *
+            Math.cos(toRad(lat2)) *
             Math.sin(dLon / 2) *
             Math.sin(dLon / 2);
+
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+
+    return R * c; // distanza in metri
 };
 
 export const getPlaces = async (req: AuthRequest, res: Response) => {
@@ -41,7 +45,6 @@ export const getPlaces = async (req: AuthRequest, res: Response) => {
             req.user?.preferences?.categories.length != 0
         ) {
             filter.categories = {
-                // TODO: Capire se mettere $in o $all
                 $in: req.user.preferences.categories,
             };
 
@@ -55,14 +58,15 @@ export const getPlaces = async (req: AuthRequest, res: Response) => {
         if (lat && lon) {
             const userLat = parseFloat(lat as string);
             const userLon = parseFloat(lon as string);
-            const searchRadius = radius ? parseFloat(radius as string) : 5;
+            // In metri
+            const searchRadius = radius ? parseFloat(radius as string) : 5000;
 
             const nearbyPlaces = allPlaces
                 .map((place) => {
                     let distance = 0;
 
                     if (place.location)
-                        distance = getDistanceFromLatLonInKm(
+                        distance = getDistanceFromLatLonInMeters(
                             userLat,
                             userLon,
                             place.location.lat,
@@ -158,7 +162,7 @@ export const createAddPlaceRequest = async (
     if (!req.user)
         return res.status(401).json({ message: "Utente non autenticato" });
 
-    if(!req.user?.expert) {
+    if (!req.user?.expert) {
         return res.status(401).json({ message: "Utente non esperto" });
     }
 
