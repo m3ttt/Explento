@@ -33,12 +33,7 @@ export const getPlaces = async (req: AuthRequest, res: Response) => {
         let allPlaces;
 
         // Ottengo gli id dei posti già visitati
-        const visitedPlaceIds =
-            req.user?.visitedPlaces?.map((vp) => vp.placeId) || [];
-
-        let filter: any = {
-            _id: { $nin: visitedPlaceIds },
-        };
+        let filter: any = {};
 
         if (
             req.user?.preferences &&
