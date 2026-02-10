@@ -4,7 +4,7 @@ import PlaceCard from "../components/PlaceCard.vue";
 import Navbar from "../components/Navbar.vue";
 import UserProfile from "@/components/UserProfile.vue";
 
-import { onBeforeMount, Ref, ref } from "vue";
+import { onBeforeMount, Ref, ref, watch } from "vue";
 import z from "zod";
 
 import { API_ENDPOINT } from "../lib/config";
@@ -13,6 +13,7 @@ import { Place, PlaceSchema } from "@/lib/types/place";
 import { getPosition } from "@/lib/position";
 import ModifyPlace from "@/components/ModifyPlace.vue";
 import ExpertError from "@/components/ExpertError.vue";
+import { refreshUser } from "@/lib/auth";
 
 // I luoghi da visualizzare come consigliati
 let places = ref<Place[]>([]);
@@ -21,8 +22,17 @@ let places = ref<Place[]>([]);
 const mapRef = ref();
 
 // Tab nella barra di navigazione attiva
-const activeTab = ref("home");
+const activeTab = ref<"home" | "add" | "edit" | "profile">("home");
 const selectedEditPlace = ref<Place | null>(null);
+
+watch(activeTab, async (newActive) => {
+  // Quando cambio pagina in home o profilo utente, aggiorna dati
+  if (newActive == "profile") {
+    await refreshUser();
+  } else if (newActive == "home") {
+    await fetchPlaces();
+  }
+});
 
 defineProps<{
   currentUser: Ref<User | null>;
@@ -33,8 +43,7 @@ const openEdit = (place: Place) => {
   activeTab.value = "edit";
 };
 
-// Esecuzione prima che carichi il componente
-onBeforeMount(async () => {
+async function fetchPlaces() {
   const position = await getPosition();
 
   // Richiediamo i luoghi vicini
@@ -70,13 +79,10 @@ onBeforeMount(async () => {
     position.coords.latitude,
     position.coords.longitude,
   );
-});
+}
 
-const removePlaceFromList = (place: Place) => {
-  places.value = places.value.filter((p) => {
-    return p._id != place._id;
-  });
-};
+// Esecuzione prima che carichi il componente
+onBeforeMount(fetchPlaces);
 </script>
 
 <template>
@@ -103,7 +109,6 @@ const removePlaceFromList = (place: Place) => {
                 mapRef.flyToLocation(item.location.lat, item.location.lon)
               "
               @edit="openEdit"
-              @completed="removePlaceFromList"
             />
           </div>
         </div>
