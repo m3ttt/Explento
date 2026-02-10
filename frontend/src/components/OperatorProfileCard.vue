@@ -7,12 +7,11 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, User, ShieldCheck, Mail, Fingerprint } from "lucide-vue-next";
+import { LogOut, User, ShieldCheck, Mail } from "lucide-vue-next";
 import { Separator } from "@/components/ui/separator";
 
 const props = defineProps<{

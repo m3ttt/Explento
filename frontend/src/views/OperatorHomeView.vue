@@ -63,7 +63,7 @@ function goTo(page: string) {
           <div class="w-2 h-2 rounded-full bg-primary"></div>
         </div>
       </Button>
-      
+
       <Button
         variant="secondary"
         class="h-20 rounded-3xl border-0 shadow-lg text-lg font-bold flex justify-between px-8 bg-card hover:bg-accent transition-all active:scale-95"
@@ -157,3 +157,4 @@ function goTo(page: string) {
   }
 }
 </style>
+

@@ -8,6 +8,7 @@ import { formatCategory } from "@/lib/utils";
 import { toast } from "vue-sonner";
 import { API_ENDPOINT } from "@/lib/config";
 import { getPosition } from "@/lib/position";
+import { makeUserAuthenticatedRequest } from "@/lib/auth";
 
 const props = defineProps<{
   place: Place;
@@ -32,12 +33,11 @@ const isTooFar = computed(() => props.place.distance > 20);
 const sendCompletedPlace = async () => {
   const position = await getPosition();
 
-  const resp = await fetch(
-    `${API_ENDPOINT}/me/visit?placeId=${props.place._id}`,
+  const resp = await makeUserAuthenticatedRequest(
+    `/me/visit?placeId=${props.place._id}`,
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

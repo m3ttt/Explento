@@ -13,7 +13,7 @@ import { Place, PlaceSchema } from "@/lib/types/place";
 import { getPosition } from "@/lib/position";
 import ModifyPlace from "@/components/ModifyPlace.vue";
 import ExpertError from "@/components/ExpertError.vue";
-import { refreshUser } from "@/lib/auth";
+import { makeUserAuthenticatedRequest, refreshUser } from "@/lib/auth";
 
 // I luoghi da visualizzare come consigliati
 let places = ref<Place[]>([]);
@@ -47,14 +47,10 @@ async function fetchPlaces() {
   const position = await getPosition();
 
   // Richiediamo i luoghi vicini
-  const res = await fetch(
+  const res = await makeUserAuthenticatedRequest(
     // Radius in metri
-    `${API_ENDPOINT}/places?lat=${position.coords.latitude}&lon=${position.coords.longitude}&radius=3000`,
-    {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-      },
-    },
+    `/places?lat=${position.coords.latitude}&lon=${position.coords.longitude}&radius=3000`,
+    {},
   );
 
   if (!res.ok) {
@@ -142,7 +138,7 @@ onBeforeMount(fetchPlaces);
         <Navbar
           :activeTab="activeTab"
           @change-tab="
-            (tabName: string) => {
+            (tabName: 'home' | 'profile' | 'add') => {
               activeTab = tabName;
             }
           "
