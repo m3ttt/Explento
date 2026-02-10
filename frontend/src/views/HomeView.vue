@@ -14,6 +14,7 @@ import { getPosition } from "@/lib/position";
 import ModifyPlace from "@/components/ModifyPlace.vue";
 import ExpertError from "@/components/ExpertError.vue";
 import { makeUserAuthenticatedRequest, refreshUser } from "@/lib/auth";
+import { toast } from "vue-sonner";
 
 // I luoghi da visualizzare come consigliati
 let places = ref<Place[]>([]);
@@ -30,7 +31,7 @@ watch(activeTab, async (newActive) => {
   if (newActive == "profile") {
     await refreshUser();
   } else if (newActive == "home") {
-    await fetchPlaces();
+    fetchPlaces();
   }
 });
 
@@ -43,37 +44,45 @@ const openEdit = (place: Place) => {
   activeTab.value = "edit";
 };
 
-async function fetchPlaces() {
-  const position = await getPosition();
+function fetchPlaces() {
+  toast.promise(
+    async () => {
+      const position = await getPosition();
 
-  // Richiediamo i luoghi vicini
-  const res = await makeUserAuthenticatedRequest(
-    // Radius in metri
-    `/places?lat=${position.coords.latitude}&lon=${position.coords.longitude}&radius=3000`,
-    {},
-  );
+      // Richiediamo i luoghi vicini
+      const res = await makeUserAuthenticatedRequest(
+        // Radius in metri
+        `/places?lat=${position.coords.latitude}&lon=${position.coords.longitude}&radius=3000`,
+        {},
+      );
 
-  if (!res.ok) {
-    places.value = [];
-    return;
-  }
+      if (!res.ok) {
+        places.value = [];
+        throw new Error("Impossibile caricare i luoghi consigliati");
+      }
 
-  const data = await res.json();
+      const data = await res.json();
 
-  // Faccio il parsing dei dati
-  const parsed = await z.array(PlaceSchema).safeParseAsync(data);
+      // Faccio il parsing dei dati
+      const parsed = await z.array(PlaceSchema).safeParseAsync(data);
 
-  if (!parsed.success) {
-    places.value = [];
-    console.error(parsed.error);
-    return;
-  }
+      if (!parsed.success) {
+        places.value = [];
+        console.error(parsed.error);
+        throw new Error("Impossibile caricare i luoghi consigliati");
+      }
 
-  places.value = parsed.data;
+      places.value = parsed.data;
 
-  mapRef.value.addPlayerMarker(
-    position.coords.latitude,
-    position.coords.longitude,
+      mapRef.value.addPlayerMarker(
+        position.coords.latitude,
+        position.coords.longitude,
+      );
+    },
+    {
+      loading: "Caricamento luoghi consigliati",
+      error: (err: Error) => err.message,
+    },
   );
 }
 

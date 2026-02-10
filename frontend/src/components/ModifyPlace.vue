@@ -22,10 +22,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle2, Loader2 } from "lucide-vue-next";
 import { reactive, ref, onMounted, computed } from "vue";
 import { getPosition } from "@/lib/position";
-import { API_ENDPOINT } from "@/lib/config";
 import { CategoriesEnum, Place } from "@/lib/types/place";
 import { formatCategory } from "@/lib/utils";
 import { makeUserAuthenticatedRequest } from "@/lib/auth";
+import { toast } from "vue-sonner";
 
 const props = defineProps<{
   initialData: Place | null;
@@ -34,6 +34,8 @@ const props = defineProps<{
 const isSubmitted = ref(false);
 const isLoading = ref(false);
 const MAX_CATEGORIES = 3;
+
+const loadingCoords = ref(false);
 
 // Determiniamo se siamo in modalità "Modifica"
 const isEditMode = computed(() => props.initialData != null);
@@ -52,11 +54,19 @@ const formData = reactive({
 onMounted(async () => {
   // Recuperiamo la posizione solo se è un NUOVO inserimento
   if (!isEditMode.value) {
-    const position = await getPosition();
-    if (position) {
-      formData.location.lat = position.coords.latitude;
-      formData.location.lon = position.coords.longitude;
-    }
+    toast.promise(
+      async () => {
+        loadingCoords.value = true;
+        const position = await getPosition();
+        formData.location.lat = position.coords.latitude;
+        formData.location.lon = position.coords.longitude;
+        loadingCoords.value = false;
+      },
+      {
+        error: (err: Error) => err.message,
+        loading: "Caricamento coordinate",
+      },
+    );
   }
 });
 
@@ -86,8 +96,11 @@ const handleSubmit = async () => {
 
     if (resp.ok) {
       isSubmitted.value = true;
+      return;
     }
+    toast.error("Errore invio richiesta");
   } catch (error) {
+    toast.error("Errore: ", error.message);
     console.error("Errore durante l'invio: ", error);
   } finally {
     isLoading.value = false;
@@ -129,6 +142,7 @@ const handleSubmit = async () => {
               <Input
                 type="number"
                 step="any"
+                :disabled="loadingCoords"
                 v-model="formData.location.lat"
                 placeholder="Lat"
                 required
@@ -136,6 +150,7 @@ const handleSubmit = async () => {
               <Input
                 type="number"
                 step="any"
+                :disabled="loadingCoords"
                 v-model="formData.location.lon"
                 placeholder="Lon"
                 required
