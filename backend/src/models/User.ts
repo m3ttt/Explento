@@ -1,93 +1,108 @@
-import { InferSchemaType, Schema, model } from "mongoose";
+import { InferSchemaType, Schema, model, Document, Types } from "mongoose";
 
-const UserSchema = new Schema({
-    username: { type: String, unique: true, required: true },
-    email: { type: String, required: true },
-    name: { type: String, required: true },
-    surname: { type: String, required: true },
-    password: { type: String, required: true },
-    profileImage: String,
-    preferences: {
-        alsoPaid: { type: Boolean },
-        categories: {
-            type: [String],
+const VisitedPlaceSchema = new Schema(
+    {
+        placeId: {
+            type: Schema.Types.ObjectId,
+            ref: "Place",
             required: true,
-            enum: [
-                "montagna",
-                "lago",
-                "cultura",
-                "scienza",
-                "borgo",
-                "città",
-                "gusto",
-                "indoor",
-                "outdoor",
-                "impegnativo",
-                "rilassante",
-                "per famiglie",
-            ],
-            _id: false,
         },
-        _id: false,
+        date: { type: Date },
     },
-    expert: { type: Boolean, default: false },
-    exp: { type: Number, default: 0 },
-    // TODO: Inserire data iscrizione
+    { _id: false },
+);
 
-    visitedPlaces: [
-        {
-            placeId: {
-                type: Schema.Types.ObjectId,
-                ref: "Place",
-                required: true,
+const SuggestedPlaceSchema = new Schema(
+    {
+        placeId: {
+            type: Schema.Types.ObjectId,
+            ref: "Place",
+            required: true,
+        },
+        visited: { type: Boolean, default: false },
+        date: { type: Date },
+    },
+    { _id: false },
+);
+
+const MissionProgressSchema = new Schema(
+    {
+        missionId: {
+            type: Schema.Types.ObjectId,
+            ref: "Mission",
+            required: true,
+        },
+        requiredPlacesVisited: [
+            {
+                placeId: { type: Schema.Types.ObjectId, ref: "Place" },
+                _id: false,
             },
-            date: {
-                type: Date,
+        ],
+        progress: { type: Number, default: 0 },
+        completed: { type: Boolean, default: false },
+    },
+    { _id: false },
+);
+
+// 2. Schema Principale
+const UserSchema = new Schema(
+    {
+        username: { type: String, unique: true, required: true },
+        email: { type: String, required: true },
+        name: { type: String, required: true },
+        surname: { type: String, required: true },
+        password: { type: String, required: true },
+        profileImage: String,
+        preferences: {
+            alsoPaid: { type: Boolean },
+            categories: {
+                type: [String],
+                required: true,
+                enum: [
+                    "montagna",
+                    "lago",
+                    "cultura",
+                    "scienza",
+                    "borgo",
+                    "città",
+                    "gusto",
+                    "indoor",
+                    "outdoor",
+                    "impegnativo",
+                    "rilassante",
+                    "per famiglie",
+                ],
             },
         },
-    ],
+        expert: { type: Boolean, default: false },
+        exp: { type: Number, default: 0 },
+        visitedPlaces: [VisitedPlaceSchema],
+        suggestedPlaces: [SuggestedPlaceSchema],
+        missionsProgresses: [MissionProgressSchema],
+    },
+    { timestamps: true },
+);
 
-    // storico posti suggeriti all'utente
-    suggestedPlaces: [
-        {
-            placeId: {
-                type: Schema.Types.ObjectId,
-                ref: "Place",
-                required: true,
-            },
-            visited: {
-                type: Boolean,
-                default: false,
-            },
-            date: {
-                type: Date,
-            },
-        },
-    ],
+interface IUserMethods {
+    addEXP(amount: number): Promise<void>;
+}
 
-    missionsProgresses: [
-        {
-            missionId: {
-                type: Schema.Types.ObjectId,
-                ref: "Mission",
-                required: true,
-            },
-            requiredPlacesVisited: [
-                {
-                    placeId: {
-                        type: Schema.Types.ObjectId,
-                        ref: "Place",
-                    },
-                },
-            ],
-            progress: { type: Number, default: 0 },
-            completed: { type: Boolean, default: false },
-        },
-    ],
-});
+export type UserType = Document<
+    unknown,
+    {},
+    InferSchemaType<typeof UserSchema>
+> &
+    InferSchemaType<typeof UserSchema> &
+    IUserMethods & { _id: Types.ObjectId };
 
-// Tipo TypeScript del documento
-export type UserType = InferSchemaType<typeof UserSchema>;
+export type UserDocument = UserType;
 
-// Modello Mongoose
-export const User = model("User", UserSchema);
+UserSchema.methods.addEXP = async function (amount: number) {
+    this.exp += amount;
+    if (this.exp >= 50 && !this.expert) {
+        this.expert = true;
+    }
+    await this.save();
+};
+
+export const User = model<UserDocument>("User", UserSchema);

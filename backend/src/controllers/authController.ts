@@ -33,7 +33,7 @@ export async function loginUser(req: Request, resp: Response) {
     // Uso il JWT_SECRET per firmare il JWT Token
     // NOTE: In caso impostare il timer di scadenza maggiore o minore
     const jwt = sign(
-        { id: foundUser.id, role: "user" },
+        { id: foundUser._id, role: "user" },
         process.env.JWT_SECRET as string,
         {
             expiresIn: "72h",
