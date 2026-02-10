@@ -12,7 +12,7 @@ const showNavbar = computed(() => !route.meta.hideNavbar);
 
 // Riceve l'operatore dal router
 const props = defineProps<{
-    currentOperator: Ref<Operator | null>;
+  currentOperator: Ref<Operator | null>;
 }>();
 
 const isProfileOpen = ref(false);
@@ -33,19 +33,26 @@ const handleTabChange = (tab: string) => {
       <router-view :currentOperator="currentOperator" />
     </main>
 
-    <div class="fixed bottom-0 left-0 right-0 z-[1000] flex flex-col items-center pointer-events-none gap-3 p-8">
-      
-      <div v-if="isProfileOpen" class="w-full max-w-md pointer-events-auto pb-6">
-        <div class="bg-background rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4">
+    <div
+      class="fixed bottom-0 left-0 right-0 z-[1000] flex flex-col items-center pointer-events-none gap-3 p-8"
+    >
+      <div
+        v-if="isProfileOpen"
+        class="w-full max-w-md pointer-events-auto pb-6"
+      >
+        <div
+          class="bg-background rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4"
+        >
           <OperatorProfileCard :operator="currentOperator" />
         </div>
       </div>
 
-      <NavbarOperator 
+      <NavbarOperator
         v-if="showNavbar"
-        class="pointer-events-auto" 
-        @change-tab="handleTabChange" 
+        class="pointer-events-auto"
+        @change-tab="handleTabChange"
       />
     </div>
   </div>
 </template>
+

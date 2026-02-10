@@ -21,8 +21,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 
-import { PlaceEditRequest, PlaceEditRequestSchema } from "@/lib/types/placeEditRequest";
-import { Loader2, Copy, Check } from "lucide-vue-next"; 
+import {
+  PlaceEditRequest,
+  PlaceEditRequestSchema,
+} from "@/lib/types/placeEditRequest";
+import { Loader2, Copy, Check } from "lucide-vue-next";
+import { makeOperatorAuthenticatedRequest } from "@/lib/operatorAuth";
 
 // --- STATO ---
 const requests = ref<PlaceEditRequest[]>([]);
@@ -31,7 +35,7 @@ const error = ref<string | null>(null);
 const operatorComments = ref<Record<string, string>>({});
 
 // Stato per l'icona di feedback: memorizza l'ID della richiesta copiata
-const copiedRequestId = ref<string | null>(null); 
+const copiedRequestId = ref<string | null>(null);
 
 // Filtri
 const filters = ref({
@@ -54,16 +58,9 @@ async function fetchRequests() {
       params.append("isNewPlace", filters.value.isNewPlace);
     }
 
-    const token = localStorage.getItem("token"); // Prendo token
-    if (!token) throw new Error("Operatore non autenticato");
-
-    const res = await fetch(
-      `http://localhost:3000/api/v1/operator/place_edit_requests?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+    const res = await makeOperatorAuthenticatedRequest(
+      `/operator/place_edit_requests?${params.toString()}`,
+      {},
     );
 
     if (!res.ok) throw new Error("Errore nel caricamento delle richieste");
@@ -101,23 +98,18 @@ function getStatusBadgeClass(status: string) {
 async function updateRequestStatus(
   requestId: string,
   newStatus: "approved" | "rejected",
-  comment?: string
+  comment?: string,
 ) {
   try {
-
-    const token = localStorage.getItem("token"); // Prendo token
-    if (!token) throw new Error("Operatore non autenticato");
-    
-    const res = await fetch(
-      `http://localhost:3000/api/v1/operator/place_edit_requests/${requestId}`,
+    const res = await makeOperatorAuthenticatedRequest(
+      `/operator/place_edit_requests/${requestId}`,
       {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ status: newStatus, operatorComment: comment }),
-      }
+      },
     );
 
     if (!res.ok) throw new Error("Errore nell'aggiornamento dello stato");
@@ -139,19 +131,21 @@ function resetFilters() {
 }
 
 // Funzione per copiare il commento negli appunti con feedback visivo
-async function copyComment(requestId: string, comment: string | null | undefined) {
+async function copyComment(
+  requestId: string,
+  comment: string | null | undefined,
+) {
   if (comment) {
     try {
       await navigator.clipboard.writeText(comment);
-      
+
       // Imposta lo stato per mostrare l'icona di spunta
       copiedRequestId.value = requestId;
 
       // Rimuovi lo stato dopo 2 secondi (animazione)
       setTimeout(() => {
         copiedRequestId.value = null;
-      }, 2000); 
-
+      }, 2000);
     } catch (err) {
       console.error("Impossibile copiare: ", err);
       alert("Errore nella copia del commento.");
@@ -248,13 +242,13 @@ onMounted(fetchRequests);
                 req.status === "pending"
                   ? "In Attesa"
                   : req.status === "approved"
-                  ? "Approvato"
-                  : "Rifiutato"
+                    ? "Approvato"
+                    : "Rifiutato"
               }}
             </Badge>
-            <Badge 
+            <Badge
               :class="
-                req.isNewPlace 
+                req.isNewPlace
                   ? 'bg-blue-100 text-blue-800 border-blue-200' // Nuovo inserimento (Blu)
                   : 'bg-purple-100 text-purple-800 border-purple-200' // Modifica esistente (Viola)
               "
@@ -283,7 +277,10 @@ onMounted(fetchRequests);
             <span class="font-medium text-muted-foreground">Categorie:</span>
             <div class="flex flex-wrap gap-1 items-center">
               <Badge
-                v-if="!req.proposedChanges.categories || req.proposedChanges.categories.length === 0"
+                v-if="
+                  !req.proposedChanges.categories ||
+                  req.proposedChanges.categories.length === 0
+                "
                 variant="outline"
               >
                 -
@@ -305,7 +302,7 @@ onMounted(fetchRequests);
               {{
                 req.proposedChanges.location
                   ? `${req.proposedChanges.location.lat.toFixed(
-                      4
+                      4,
                     )}, ${req.proposedChanges.location.lon.toFixed(4)}`
                   : "-"
               }}
@@ -358,14 +355,11 @@ onMounted(fetchRequests);
                 @click="copyComment(req._id, req.operatorComment)"
                 title="Copia commento"
               >
-                <Check 
-                  v-if="copiedRequestId === req._id" 
+                <Check
+                  v-if="copiedRequestId === req._id"
                   class="h-3.5 w-3.5 text-green-600 animate-in fade-in zoom-in"
                 />
-                <Copy 
-                  v-else 
-                  class="h-3.5 w-3.5" 
-                />
+                <Copy v-else class="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
@@ -379,7 +373,7 @@ onMounted(fetchRequests);
                 updateRequestStatus(
                   req._id,
                   'approved',
-                  operatorComments[req._id]
+                  operatorComments[req._id],
                 )
               "
             >
@@ -394,7 +388,7 @@ onMounted(fetchRequests);
                 updateRequestStatus(
                   req._id,
                   'rejected',
-                  operatorComments[req._id]
+                  operatorComments[req._id],
                 )
               "
             >

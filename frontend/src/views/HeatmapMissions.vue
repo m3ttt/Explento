@@ -1,8 +1,8 @@
 <template>
   <div class="relative w-full h-screen">
     <div class="fixed top-6 right-6 z-[1000]">
-      <button 
-        @click="exportToJson" 
+      <button
+        @click="exportToJson"
         class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow transition cursor-pointer"
       >
         Export JSON
@@ -10,28 +10,24 @@
     </div>
 
     <div id="map"></div>
-    
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref} from "vue";
+import { onMounted, ref } from "vue";
 
 import L from "leaflet";
 import "leaflet.heat";
 import "leaflet/dist/leaflet.css";
+import { makeOperatorAuthenticatedRequest } from "@/lib/operatorAuth";
 
 // Funzione per recuperare i dati della heatmap
 async function fetchHeatmapData() {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Utente non autenticato");
-  
-  const res = await fetch("http://localhost:3000/api/v1/heatmap/missions", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  
+
+  const res = await makeOperatorAuthenticatedRequest("/heatmap/missions", {});
+
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return await res.json();
 }
@@ -48,16 +44,16 @@ const exportToJson = () => {
   const blob = new Blob([JSON.stringify(heatmapData.value, null, 2)], {
     type: "application/json",
   });
-  
+
   const url = URL.createObjectURL(blob);
   const linkElement = document.createElement("a");
-  
+
   linkElement.href = url;
   linkElement.download = "heatmap_data.json";
-  
+
   document.body.appendChild(linkElement);
   linkElement.click();
-  
+
   // Pulizia
   document.body.removeChild(linkElement);
   URL.revokeObjectURL(url);
