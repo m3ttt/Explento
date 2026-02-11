@@ -41,6 +41,7 @@ export const triggerVisitPlace = async (req: AuthRequest, resp: Response) => {
     await updateMissionsProgress(req.user, placeId);
     await req.user.save();
 
+    // TODO: EXP va aggiunta solo se il luogo non è stato ancora scoperto.
     req.user.addEXP(5);
 
     return resp.status(200).json({ success: true });
