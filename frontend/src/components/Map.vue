@@ -72,6 +72,7 @@ export default {
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       subdomains: ["a", "b", "c"],
       attributionControl: true,
+      crossOrigin: true
     }).addTo(this.map);
 
     this.markersLayer = L.layerGroup().addTo(this.map);
