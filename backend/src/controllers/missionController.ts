@@ -34,3 +34,70 @@ export const getAvailableMissions = async (req: AuthRequest, resp: Response) => 
         return resp.status(500).json({ error: "Errore server" });
     }
 };
+
+// Aggiunge una missione all'utente
+export const activateMission = async (req: AuthRequest, resp: Response) => {
+    try {
+        const user = req.user as UserType;
+        if (!user) return resp.status(401).json({ error: "Non autenticato" });
+
+        const { missionId } = req.body;
+        if (!missionId) return resp.status(400).json({ error: "Mancante missionId" });
+
+        // Controlla che la missione esista
+        const mission = await Mission.findById(missionId);
+        if (!mission) return resp.status(404).json({ error: "Missione non trovata" });
+
+        // Verifica se l'utente ha già la missione
+        const alreadyAdded = user.missionsProgresses.some(
+            mp => mp.missionId.toString() === missionId
+        );
+        if (alreadyAdded)
+            return resp.status(400).json({ error: "Missione già attiva per l'utente" });
+
+        // Aggiunge la missione all'utente
+        user.missionsProgresses.push({
+            missionId,
+            requiredPlacesVisited: [],
+            progress: 0,
+            completed: false
+        });
+
+        await user.save();
+
+        return resp.status(200).json({ success: true });
+    } catch (err) {
+        console.error(err);
+        return resp.status(500).json({ error: "Errore server" });
+    }
+};
+
+// Rimuove una missione dall'utente
+export const removeMission = async (req: AuthRequest, resp: Response) => {
+    try {
+        const user = req.user as UserType;
+        if (!user) return resp.status(401).json({ error: "Non autenticato" });
+
+        const { missionId } = req.params;
+        if (!missionId) return resp.status(400).json({ error: "Mancante missionId" });
+
+        // Verifica se l'utente ha la missione
+        const index = user.missionsProgresses.findIndex(
+            mp => mp.missionId.toString() === missionId
+        );
+
+        if (index === -1) {
+            return resp.status(404).json({ error: "Missione non trovata nell'account utente" });
+        }
+
+        // Rimuove la missione
+        user.missionsProgresses.splice(index, 1);
+
+        await user.save();
+
+        return resp.status(200).json({ success: true });
+    } catch (err) {
+        console.error(err);
+        return resp.status(500).json({ error: "Errore server" });
+    }
+};
