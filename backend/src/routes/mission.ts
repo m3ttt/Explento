@@ -1,6 +1,6 @@
 import express from "express";
 import { authenticate } from "./auth.js";
-import { getAllMissions, activateMission, getAvailableMissions, removeMission} from "../controllers/missionController.js";
+import { getAllMissions, activateMission, getAvailableMissions, removeMission, createMission } from "../controllers/missionController.js";
 
 const router = express.Router();
 
@@ -17,5 +17,8 @@ router.post("/activate", activateMission);
 
 // DELETE /missions/:missionId, utente rinuncia a una missione
 router.delete("/:missionId", removeMission);
+
+// POST /missions, crea una nuova missione
+router.post("", createMission);
 
 export default router;
