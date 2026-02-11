@@ -46,6 +46,30 @@ export const triggerVisitPlace = async (req: AuthRequest, resp: Response) => {
     return resp.status(200).json({ success: true });
 };
 
+function getDistanceInMeters(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+): number {
+    const R = 6371000; // Raggio della Terra in metri
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) *
+            Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+}
+
 /**
  * Valida una visita di un utente a un luogo.
  *
@@ -83,9 +107,18 @@ async function validateVisit(
     if (!place) return "Luogo non trovato";
     if (!place.location) return "Luogo senza coordinate";
 
-    // TODO: implementare check coordinate in un raggio di n metri
-    if (place.location.lat !== lat || place.location.lon !== lon)
-        return "Posizione utente errata";
+    // Controllo distanza entro 20 metri
+    const distance = getDistanceInMeters(
+        latNum,
+        lonNum,
+        place.location.lat,
+        place.location.lon
+    );
+
+    // Se l'utente si trova a piu di 20 metri di distanza dal luogo, visita non valida
+    if (distance > 20) {
+        return "Posizione utente fuori dal raggio consentito";
+    }
 
     return null;
 }
