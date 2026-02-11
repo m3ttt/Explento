@@ -101,3 +101,31 @@ export const removeMission = async (req: AuthRequest, resp: Response) => {
         return resp.status(500).json({ error: "Errore server" });
     }
 };
+
+// Crea una nuova missione
+export const createMission = async (req: AuthRequest, resp: Response) => {
+    try {
+        const { name, description, minLevel, rewardExp, categories, requiredPlaces, requiredCount } = req.body;
+
+        if (!name || !rewardExp || !categories) {
+            return resp.status(400).json({ error: "Campi obbligatori mancanti" });
+        }
+
+        const mission = new Mission({
+            name,
+            description: description || "",
+            minLevel: minLevel || 0,
+            rewardExp,
+            categories,
+            requiredPlaces: requiredPlaces || [],
+            requiredCount: requiredCount || 1
+        });
+
+        await mission.save();
+
+        return resp.status(201).json({ success: true, mission });
+    } catch (err) {
+        console.error(err);
+        return resp.status(500).json({ error: "Errore server" });
+    }
+};
