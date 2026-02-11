@@ -138,29 +138,59 @@ async function recordVisit(user: UserType, placeId: string) {
 }
 
 async function updateMissionsProgress(user: UserType, placeId: string) {
-    // TODO: Controllare anche secondo tipo missione per categoria
+    // Preleva tutti gli _id delle missioni dell'utente che non sono completate
+    const incompleteMissionIds = user.missionsProgresses
+    .filter(mp => !mp.completed)
+    .map(mp => mp.missionId);
+
+    // Singola query per recuperare tutte le missioni non completate
+    const missions = await Mission.find({
+    _id: { $in: incompleteMissionIds }
+    }).lean(); // lean() per restituire plain objects
+
+    const place = await Place.findById(placeId);
+    if (!place) return;
 
     for (const missionProgress of user.missionsProgresses) {
         // se la missione è già completata, salto
         if (missionProgress.completed) continue;
 
-        // carico la missione dal DB
-        const mission = await Mission.findById(missionProgress.missionId);
+        // carico la missione
+        const mission = missions.find(m => m._id.toString() === missionProgress.missionId.toString());
         if (!mission) continue;
 
-        // verifico se il luogo visitato è tra i requiredPlaces
-        const isRequired = mission.requiredPlaces.some(
-            (rp) => rp.placeId && rp.placeId.toString() === placeId,
-        );
+        const hasRequiredPlaces = mission.requiredPlaces.length > 0;
+        const hasCategories = mission.categories.length > 0;
 
         // verifica se il luogo non è già stato registrato come visitato nella missione
         const alreadyVisitedInMission =
             missionProgress.requiredPlacesVisited.some(
                 (rpv) => rpv.placeId && rpv.placeId.toString() === placeId,
             );
+        
+        // Se già contato per questa missione, passo alla successiva
+        if (alreadyVisitedInMission) continue;
 
-        // Se il luogo conta come progresso e non è ancora stato visitato nella missione
-        if (isRequired && !alreadyVisitedInMission) {
+        let countsForProgress = false;
+        
+        // NB: Se una missione ha requiredPlaces + categories, ignora le categorie
+        //     le categorie contano solo se requiredPlaces è vuoto.
+
+        // CASO 1: missione con luoghi specifici
+        if (hasRequiredPlaces) {
+            countsForProgress = mission.requiredPlaces.some(
+                (rp) => rp.placeId && rp.placeId.toString() === placeId,
+            );
+        }
+        // CASO 2: missione per categoria
+        else if (hasCategories) {
+            countsForProgress = place.categories.some((cat: string) =>
+                mission.categories.includes(cat),
+            );
+        }
+
+        // Se il luogo conta come progresso
+        if (countsForProgress) {
             // il luogo conta come progresso, aggiungo ai requiredPlacesVisited
             missionProgress.requiredPlacesVisited.push({ placeId });
             missionProgress.progress =
@@ -169,7 +199,7 @@ async function updateMissionsProgress(user: UserType, placeId: string) {
             // Segno missione come completata e aggiungo rewardExp all'utente
             if (missionProgress.progress >= mission.requiredCount) {
                 missionProgress.completed = true;
-                user.exp += mission.rewardExp;
+                user.addEXP(mission.rewardExp);
             }
         }
     }
