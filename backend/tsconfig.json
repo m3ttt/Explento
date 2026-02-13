@@ -8,6 +8,9 @@
     "skipLibCheck": true,
     "strict": true,
     "outDir": "dist",
-    "rootDir": "src"
-  }
+    "rootDir": ".",
+    "types": ["node", "jest"]
+  },
+  "include": ["src/**/*.ts", "testing/**/*.ts"],
+  "exclude": ["node_modules", "jest.config.ts"]
 }
