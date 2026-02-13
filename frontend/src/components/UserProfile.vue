@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCategory } from "@/lib/utils";
 
 const props = defineProps<{
-  user: Ref<User | null>;
+  user: Ref<User>;
 }>();
 
 const router = useRouter();
@@ -42,29 +42,6 @@ const toggleSection = (section: "preferences" | "discovered") => {
 
 const placeNames = ref<Record<string, string>>({});
 
-// Faccio una variabile dinamica computed, perchè props.user è una ref
-// Aggiorno discoveredPlaces solo quando si aggiorna props.user
-const discoveredPlaces = computed(() => {
-  if (!props.user?.value?.visitedPlaces) return [];
-
-  const discoveryMap: Record<string, string> = {};
-
-  props.user.value.visitedPlaces.forEach((p) => {
-    // Se il luogo non c'è o la data corrente è precedente a quella salvata, aggiorna
-    if (
-      !discoveryMap[p.placeId] ||
-      new Date(p.date) < new Date(discoveryMap[p.placeId])
-    ) {
-      discoveryMap[p.placeId] = p.date;
-    }
-  });
-
-  // Trasforma l'oggetto in un array e ordina per data più recente di scoperta
-  return Object.entries(discoveryMap)
-    .map(([placeId, date]) => ({ placeId, date }))
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-});
-
 const avatar = computed(() => {
   if (!props.user?.value) return "";
   return createAvatar(initials, {
@@ -74,11 +51,10 @@ const avatar = computed(() => {
 });
 
 const fetchPlaceNames = async () => {
-  const uniqueIds = discoveredPlaces.value.map((p) => p.placeId);
+  const uniqueIds = props.user.value.discoveredPlaces.map((p) => p.placeId);
   if (uniqueIds.length === 0) return;
 
   const promises = uniqueIds.map(async (id) => {
-    // Salta se già caricato (risparmio qualche chiamata API)
     if (placeNames.value[id]) return;
 
     try {
@@ -93,8 +69,10 @@ const fetchPlaceNames = async () => {
 };
 
 onMounted(fetchPlaceNames);
-// Quando props.user.value.visitedPlaces cambia faccio il fetchPlaceNames
-watch(() => props.user?.value?.visitedPlaces, fetchPlaceNames, { deep: true });
+// Quando props.user.value.discoveredPlaces cambia faccio il fetchPlaceNames
+watch(() => props.user?.value?.discoveredPlaces, fetchPlaceNames, {
+  deep: true,
+});
 
 const handleLogout = async () => {
   await logout();
@@ -170,7 +148,7 @@ const formatDate = (dateStr: string) => {
           <div class="flex items-center gap-1.5 text-chart-3">
             <MapPin class="w-4 h-4" />
             <span class="font-bold text-lg leading-none">{{
-              discoveredPlaces.length
+              props.user.value.discoveredPlaces.length
             }}</span>
           </div>
           <span
@@ -271,9 +249,12 @@ const formatDate = (dateStr: string) => {
         </button>
 
         <div v-show="activeSection === 'discovered'" class="px-4 pb-4">
-          <div v-if="discoveredPlaces.length" class="space-y-2 pt-2">
+          <div
+            v-if="props.user.value.discoveredPlaces.length"
+            class="space-y-2 pt-2"
+          >
             <div
-              v-for="place in discoveredPlaces"
+              v-for="place in props.user.value.discoveredPlaces"
               :key="place.placeId"
               class="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/20"
             >

@@ -37,12 +37,12 @@ export const triggerVisitPlace = async (req: AuthRequest, resp: Response) => {
         ? String(req.query.placeId[0])
         : String(req.query.placeId);
 
-    await recordVisit(req.user, placeId);
+    const alreadyVisited = await recordVisit(req.user, placeId);
     await updateMissionsProgress(req.user, placeId);
     await req.user.save();
 
-    // TODO: EXP va aggiunta solo se il luogo non è stato ancora scoperto.
-    req.user.addEXP(5);
+    // Solo quando utente scopre luogo per la prima volta, assegna 5 EXP
+    if (!alreadyVisited) req.user.addEXP(5);
 
     return resp.status(200).json({ success: true });
 };
@@ -51,7 +51,7 @@ function getDistanceInMeters(
     lat1: number,
     lon1: number,
     lat2: number,
-    lon2: number
+    lon2: number,
 ): number {
     const R = 6371000; // Raggio della Terra in metri
     const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -113,7 +113,7 @@ async function validateVisit(
         latNum,
         lonNum,
         place.location.lat,
-        place.location.lon
+        place.location.lon,
     );
 
     // Se l'utente si trova a piu di 20 metri di distanza dal luogo, visita non valida
@@ -124,29 +124,31 @@ async function validateVisit(
     return null;
 }
 
-async function recordVisit(user: UserType, placeId: string) {
-    const alreadyVisited = user.visitedPlaces.some(
+async function recordVisit(user: UserType, placeId: string): Promise<boolean> {
+    const alreadyVisited = user.discoveredPlaces.some(
         (vp) => vp.placeId?.toString() === placeId,
     );
 
-    if (alreadyVisited) return; // luogo già visitato, non aggiungo nulla
+    if (alreadyVisited) return true; // luogo già visitato, non aggiungo nulla
 
-    user.visitedPlaces.push({
+    user.discoveredPlaces.push({
         placeId,
         visited: true,
         date: new Date(),
     });
+
+    return false;
 }
 
 async function updateMissionsProgress(user: UserType, placeId: string) {
     // Preleva tutti gli _id delle missioni dell'utente che non sono completate
     const incompleteMissionIds = user.missionsProgresses
-    .filter(mp => !mp.completed)
-    .map(mp => mp.missionId);
+        .filter((mp) => !mp.completed)
+        .map((mp) => mp.missionId);
 
     // Singola query per recuperare tutte le missioni non completate
     const missions = await Mission.find({
-    _id: { $in: incompleteMissionIds }
+        _id: { $in: incompleteMissionIds },
     }).lean(); // lean() per restituire plain objects
 
     const place = await Place.findById(placeId);
@@ -157,7 +159,9 @@ async function updateMissionsProgress(user: UserType, placeId: string) {
         if (missionProgress.completed) continue;
 
         // carico la missione
-        const mission = missions.find(m => m._id.toString() === missionProgress.missionId.toString());
+        const mission = missions.find(
+            (m) => m._id.toString() === missionProgress.missionId.toString(),
+        );
         if (!mission) continue;
 
         const hasRequiredPlaces = mission.requiredPlaces.length > 0;
@@ -168,12 +172,12 @@ async function updateMissionsProgress(user: UserType, placeId: string) {
             missionProgress.requiredPlacesVisited.some(
                 (rpv) => rpv.placeId && rpv.placeId.toString() === placeId,
             );
-        
+
         // Se già contato per questa missione, passo alla successiva
         if (alreadyVisitedInMission) continue;
 
         let countsForProgress = false;
-        
+
         // NB: Se una missione ha requiredPlaces + categories, ignora le categorie
         //     le categorie contano solo se requiredPlaces è vuoto.
 

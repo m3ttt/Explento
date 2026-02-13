@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, Ref } from "vue";
 import { MapPin, Ticket, Pencil } from "lucide-vue-next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Place } from "@/lib/types/place";
 import { formatCategory } from "@/lib/utils";
 import { toast } from "vue-sonner";
-import { API_ENDPOINT } from "@/lib/config";
 import { getPosition } from "@/lib/position";
-import { makeUserAuthenticatedRequest } from "@/lib/auth";
+import { makeUserAuthenticatedRequest, refreshUser } from "@/lib/auth";
+import { User } from "@/lib/types/user";
 
 const props = defineProps<{
   place: Place;
+  user: Ref<User>;
 }>();
 
 const emit = defineEmits<{
@@ -48,11 +49,25 @@ const sendCompletedPlace = async () => {
   );
 
   if (resp.ok) {
-    return toast.success("Luogo completato. Assegnati +5EXP");
+    toast.success(
+      isToDiscover.value
+        ? "Nuovo luogo scoperto. Assegnati 5EXP"
+        : "Luogo visitato. Missioni associate aggiornate",
+    );
+    await refreshUser();
+    return;
   }
 
   return toast.error(`Errore: ${(await resp.json())["error"]}`);
 };
+
+const isToDiscover = computed(() => {
+  if (!props.user.value.discoveredPlaces) return true;
+  const discoveredPlaces = props.user.value.discoveredPlaces.map((p) => {
+    return p.placeId;
+  });
+  return !discoveredPlaces.includes(props.place._id);
+});
 </script>
 
 <template>
@@ -114,7 +129,13 @@ const sendCompletedPlace = async () => {
       @click="sendCompletedPlace"
       :variant="isTooFar ? 'outline' : 'default'"
     >
-      {{ !isTooFar ? "Completa Luogo" : "Troppo distante" }}
+      {{
+        !isTooFar
+          ? isToDiscover
+            ? "Scopri Luogo"
+            : "Visita Luogo"
+          : "Troppo distante"
+      }}
     </Button>
   </div>
 </template>

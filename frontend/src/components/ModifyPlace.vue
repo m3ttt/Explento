@@ -22,7 +22,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle2, Loader2 } from "lucide-vue-next";
 import { reactive, ref, onMounted, computed } from "vue";
 import { getPosition } from "@/lib/position";
-import { API_ENDPOINT } from "@/lib/config";
 import { CategoriesEnum, Place } from "@/lib/types/place";
 import { formatCategory } from "@/lib/utils";
 import { makeUserAuthenticatedRequest } from "@/lib/auth";
@@ -67,9 +66,6 @@ const updateCategories = (newValues: string[]) => {
 const handleSubmit = async () => {
   isLoading.value = true;
   try {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
     const url = isEditMode.value
       ? `/places/${props.initialData._id}`
       : `/places/request`;
