@@ -1,10 +1,10 @@
 import express from "express";
-import userRoutes from "./routes/users.js";
-import meRoutes from "./routes/me.js";
-import operatorRouter from "./routes/operator.js";
-import placesRouter from "./routes/places.js";
-import heatMapRouter from "./routes/heatmap.js"
-import missionsRouter from "./routes/mission.js"
+import userRoutes from "./routes/users";
+import meRoutes from "./routes/me";
+import operatorRouter from "./routes/operator";
+import placesRouter from "./routes/places";
+import heatMapRouter from "./routes/heatmap"
+import missionsRouter from "./routes/mission"
 import {
     USERS_ENDPOINT,
     ME_ENDPOINT,
@@ -13,9 +13,9 @@ import {
     PLACES_ENDPOINT,
     HEATMAP_ENDPOINT,
     MISSIONS_ENDPOINT
-} from "./config.js";
+} from "./config";
 import cors from "cors";
-import { router as authRouter } from "./routes/auth.js";
+import { router as authRouter } from "./routes/auth";
 
 const app = express();
 app.use(express.json());

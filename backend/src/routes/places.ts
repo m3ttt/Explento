@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { authenticate } from "./auth.js";
+import { authenticate } from "./auth";
 import {
     createAddPlaceRequest,
     getPlaces,
     createUpdatePlaceRequest,
     getPlaceById,
-} from "../controllers/placeController.js";
+} from "../controllers/placeController";
 
 const router = Router();
 

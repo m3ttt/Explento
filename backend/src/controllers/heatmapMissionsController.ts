@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
-import { User } from "../models/User.js";
-import { AuthRequest } from "../routes/auth.js";
-import { Place } from "../models/Place.js";
+import { User } from "../models/User";
+import { AuthRequest } from "../routes/auth";
+import { Place } from "../models/Place";
 
 const router = Router();
 

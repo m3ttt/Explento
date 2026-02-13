@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
-import { Operator } from "../models/Operator.js";
+import { Operator } from "../models/Operator";
 import { compare } from "bcrypt";
 import pkg from "jsonwebtoken";
 const { sign } = pkg;
-import { PlaceEditRequest } from "../models/PlaceEditRequest.js";
-import { Place } from "../models/Place.js";
-import { User } from "../models/User.js";
+import { PlaceEditRequest } from "../models/PlaceEditRequest";
+import { Place } from "../models/Place";
+import { User } from "../models/User";
 
-import type { OperatorAuthRequest } from "../routes/operator.js";
+import type { OperatorAuthRequest } from "../routes/operator";
 
 export const loginOperator = async (req: Request, resp: Response) => {
     const { email, password } = req.body;
