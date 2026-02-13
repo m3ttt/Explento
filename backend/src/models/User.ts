@@ -1,6 +1,6 @@
 import { InferSchemaType, Schema, model, Document, Types } from "mongoose";
 
-const VisitedPlaceSchema = new Schema(
+const DiscoveredPlaceSchema = new Schema(
     {
         placeId: {
             type: Schema.Types.ObjectId,
@@ -76,7 +76,7 @@ const UserSchema = new Schema(
         },
         expert: { type: Boolean, default: false },
         exp: { type: Number, default: 0 },
-        visitedPlaces: [VisitedPlaceSchema],
+        discoveredPlaces: [DiscoveredPlaceSchema],
         suggestedPlaces: [SuggestedPlaceSchema],
         missionsProgresses: [MissionProgressSchema],
     },

@@ -101,6 +101,7 @@ onBeforeMount(fetchPlaces);
               v-for="item in places"
               :key="item._id"
               :place="item"
+              :user="currentUser"
               @click="
                 mapRef.flyToLocation(item.location.lat, item.location.lon)
               "
