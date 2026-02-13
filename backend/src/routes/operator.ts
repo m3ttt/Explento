@@ -7,9 +7,9 @@ import {
     getPlaceEdits,
     updatePlaceEdits,
     meOperator,
-} from "../controllers/operatorController.js";
+} from "../controllers/operatorController";
 
-import { Operator, OperatorDocument } from "../models/Operator.js";
+import { Operator, OperatorDocument } from "../models/Operator";
 
 export interface OperatorAuthRequest extends Request {
     operator?: OperatorDocument;

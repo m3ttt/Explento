@@ -1,5 +1,5 @@
-import { USERS_ENDPOINT } from "../config.js";
-import { User, UserType } from "../models/User.js";
+import { USERS_ENDPOINT } from "../config";
+import { User, UserType } from "../models/User";
 import type { Request, Response } from "express";
 
 /**

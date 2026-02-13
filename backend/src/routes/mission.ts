@@ -1,6 +1,6 @@
 import express from "express";
-import { authenticate } from "./auth.js";
-import { getAllMissions, activateMission, getAvailableMissions, removeMission, createMission } from "../controllers/missionController.js";
+import { authenticate } from "./auth";
+import { getAllMissions, activateMission, getAvailableMissions, removeMission, createMission } from "../controllers/missionController";
 
 const router = express.Router();
 

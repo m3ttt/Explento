@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { heatmapMissions } from "../controllers/heatmapMissionsController.js";
-import { operatorAuthenticate } from "./operator.js";
+import { heatmapMissions } from "../controllers/heatmapMissionsController";
+import { operatorAuthenticate } from "./operator";
 
 const router = Router();
 

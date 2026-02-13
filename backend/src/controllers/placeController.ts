@@ -1,7 +1,7 @@
 import type { Response } from "express";
-import { AuthRequest } from "../routes/auth.js";
-import { Place } from "../models/Place.js";
-import { PlaceEditRequest } from "../models/PlaceEditRequest.js";
+import { AuthRequest } from "../routes/auth";
+import { Place } from "../models/Place";
+import { PlaceEditRequest } from "../models/PlaceEditRequest";
 import type { ParsedQs } from "qs";
 
 const getDistanceFromLatLonInMeters = (

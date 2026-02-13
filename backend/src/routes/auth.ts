@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response, Router } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { User, UserType } from "../models/User.js";
+import { User, UserType } from "../models/User";
 import { Document } from "mongoose";
-import { loginUser, registerUser } from "../controllers/authController.js";
+import { loginUser, registerUser } from "../controllers/authController";
 
 export interface AuthRequest extends Request {
     user?: UserType;

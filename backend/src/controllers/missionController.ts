@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import Mission from "../models/Mission.js";
-import { User, UserType } from "../models/User.js";
-import { AuthRequest } from "../routes/auth.js";
+import Mission from "../models/Mission";
+import { User, UserType } from "../models/User";
+import { AuthRequest } from "../routes/auth";
 
 // Restituisce tutte le missioni sul database
 export const getAllMissions = async (req: AuthRequest, resp: Response) => {

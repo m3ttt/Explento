@@ -1,8 +1,8 @@
 import type { Response } from "express";
-import { AuthRequest } from "../routes/auth.js";
-import { Place } from "../models/Place.js";
-import { User, UserType } from "../models/User.js";
-import Mission from "../models/Mission.js";
+import { AuthRequest } from "../routes/auth";
+import { Place } from "../models/Place";
+import { User, UserType } from "../models/User";
+import Mission from "../models/Mission";
 import type { ParsedQs } from "qs";
 
 /**

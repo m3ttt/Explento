@@ -1,10 +1,10 @@
 import express from "express";
-import { authenticate } from "./auth.js";
+import { authenticate } from "./auth";
 import {
     triggerVisitPlace,
     getMeInformation,
     updatePreferences,
-} from "../controllers/meController.js";
+} from "../controllers/meController";
 const router = express.Router();
 
 router.use(authenticate);
