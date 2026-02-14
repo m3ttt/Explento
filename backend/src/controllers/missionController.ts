@@ -15,17 +15,22 @@ export const getAllMissions = async (req: AuthRequest, resp: Response) => {
 };
 
 // Restituisce le missioni disponibili per l'utente (missioni che non ha ancora accettato/attivato)
-export const getAvailableMissions = async (req: AuthRequest, resp: Response) => {
+export const getAvailableMissions = async (
+    req: AuthRequest,
+    resp: Response,
+) => {
     try {
         const user = req.user as UserType;
         if (!user) return resp.status(401).json({ error: "Non autenticato" });
 
         // Prende tutti gli _id delle missioni già attive per l'utente
-        const activeMissionIds = user.missionsProgresses.map(mp => mp.missionId.toString());
+        const activeMissionIds = user.missionsProgresses.map((mp) =>
+            mp.missionId.toString(),
+        );
 
         // Trova tutte le missioni NON presenti nell'array
         const missions = await Mission.find({
-            _id: { $nin: activeMissionIds }
+            _id: { $nin: activeMissionIds },
         }).lean();
 
         return resp.status(200).json(missions);
@@ -42,25 +47,29 @@ export const activateMission = async (req: AuthRequest, resp: Response) => {
         if (!user) return resp.status(401).json({ error: "Non autenticato" });
 
         const { missionId } = req.body;
-        if (!missionId) return resp.status(400).json({ error: "Mancante missionId" });
+        if (!missionId)
+            return resp.status(400).json({ error: "Mancante missionId" });
 
         // Controlla che la missione esista
         const mission = await Mission.findById(missionId);
-        if (!mission) return resp.status(404).json({ error: "Missione non trovata" });
+        if (!mission)
+            return resp.status(404).json({ error: "Missione non trovata" });
 
         // Verifica se l'utente ha già la missione
         const alreadyAdded = user.missionsProgresses.some(
-            mp => mp.missionId.toString() === missionId
+            (mp) => mp.missionId.toString() === missionId,
         );
         if (alreadyAdded)
-            return resp.status(400).json({ error: "Missione già attiva per l'utente" });
+            return resp
+                .status(400)
+                .json({ error: "Missione già attiva per l'utente" });
 
         // Aggiunge la missione all'utente
         user.missionsProgresses.push({
             missionId,
             requiredPlacesVisited: [],
             progress: 0,
-            completed: false
+            completed: false,
         });
 
         await user.save();
@@ -79,15 +88,18 @@ export const removeMission = async (req: AuthRequest, resp: Response) => {
         if (!user) return resp.status(401).json({ error: "Non autenticato" });
 
         const { missionId } = req.params;
-        if (!missionId) return resp.status(400).json({ error: "Mancante missionId" });
+        if (!missionId)
+            return resp.status(400).json({ error: "Mancante missionId" });
 
         // Verifica se l'utente ha la missione
         const index = user.missionsProgresses.findIndex(
-            mp => mp.missionId.toString() === missionId
+            (mp) => mp.missionId.toString() === missionId,
         );
 
         if (index === -1) {
-            return resp.status(404).json({ error: "Missione non trovata nell'account utente" });
+            return resp
+                .status(404)
+                .json({ error: "Missione non trovata nell'account utente" });
         }
 
         // Rimuove la missione
@@ -105,10 +117,20 @@ export const removeMission = async (req: AuthRequest, resp: Response) => {
 // Crea una nuova missione
 export const createMission = async (req: AuthRequest, resp: Response) => {
     try {
-        const { name, description, minLevel, rewardExp, categories, requiredPlaces, requiredCount } = req.body;
+        const {
+            name,
+            description,
+            minLevel,
+            rewardExp,
+            categories,
+            requiredPlaces,
+            requiredCount,
+        } = req.body;
 
         if (!name || !rewardExp || !categories) {
-            return resp.status(400).json({ error: "Campi obbligatori mancanti" });
+            return resp
+                .status(400)
+                .json({ error: "Campi obbligatori mancanti" });
         }
 
         const mission = new Mission({
@@ -118,7 +140,7 @@ export const createMission = async (req: AuthRequest, resp: Response) => {
             rewardExp,
             categories,
             requiredPlaces: requiredPlaces || [],
-            requiredCount: requiredCount || 1
+            requiredCount: requiredCount || 1,
         });
 
         await mission.save();
@@ -127,5 +149,27 @@ export const createMission = async (req: AuthRequest, resp: Response) => {
     } catch (err) {
         console.error(err);
         return resp.status(500).json({ error: "Errore server" });
+    }
+};
+
+export const getMissionById = async (req: AuthRequest, resp: Response) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            return resp
+                .status(400)
+                .json({ message: "ID Missione non trovato" });
+        }
+
+        const mission = await Mission.findById(id);
+        if (!mission) {
+            return resp.status(404).json({ message: "Missione non trovata" });
+        }
+
+        return resp.status(200).json(mission);
+    } catch (error) {
+        console.error("Error fetching mission by id:", error);
+        return resp.status(500).json({ message: "Errore server" });
     }
 };

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CirclePlus, Home, User } from "lucide-vue-next";
+import { CirclePlus, Home, List, User } from "lucide-vue-next";
 import { Button } from "../components/ui/button";
 
 defineEmits(["change-tab"]);
@@ -27,6 +27,14 @@ defineProps<{
       @click="$emit('change-tab', 'add')"
     >
       <CirclePlus class="w-5 h-5" />
+    </Button>
+
+    <Button
+      variant="ghost"
+      class="flex-1 rounded-full hover:bg-muted"
+      @click="$emit('change-tab', 'missions')"
+    >
+      <List class="w-5 h-5" />
     </Button>
 
     <Button

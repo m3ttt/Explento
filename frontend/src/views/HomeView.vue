@@ -14,6 +14,7 @@ import { getPosition } from "@/lib/position";
 import ModifyPlace from "@/components/ModifyPlace.vue";
 import ExpertError from "@/components/ExpertError.vue";
 import { makeUserAuthenticatedRequest, refreshUser } from "@/lib/auth";
+import Mission from "@/components/Mission.vue";
 
 // I luoghi da visualizzare come consigliati
 let places = ref<Place[]>([]);
@@ -22,7 +23,7 @@ let places = ref<Place[]>([]);
 const mapRef = ref();
 
 // Tab nella barra di navigazione attiva
-const activeTab = ref<"home" | "add" | "edit" | "profile">("home");
+const activeTab = ref<"home" | "add" | "edit" | "profile" | "missions">("home");
 const selectedEditPlace = ref<Place | null>(null);
 
 watch(activeTab, async (newActive) => {
@@ -31,6 +32,8 @@ watch(activeTab, async (newActive) => {
     await refreshUser();
   } else if (newActive == "home") {
     await fetchPlaces();
+  } else if (newActive === "missions") {
+    await refreshUser();
   }
 });
 
@@ -134,6 +137,12 @@ onBeforeMount(fetchPlaces);
             (activeTab === 'add' && !currentUser.value.expert) ||
             (activeTab === 'edit' && !currentUser.value.expert)
           "
+        />
+
+        <Mission
+          class="w-full max-w-md pointer-events-auto pb-6"
+          :user="currentUser"
+          v-else-if="activeTab === 'missions'"
         />
 
         <Navbar
