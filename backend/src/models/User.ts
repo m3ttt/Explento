@@ -102,7 +102,7 @@ UserSchema.methods.addEXP = async function (amount: number) {
     if (this.exp >= 50 && !this.expert) {
         this.expert = true;
     }
-    await this.save();
+    // await this.save();
 };
 
 export const User = model<UserDocument>("User", UserSchema);

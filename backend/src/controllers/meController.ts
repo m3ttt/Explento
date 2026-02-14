@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import { AuthRequest } from "../routes/auth.js";
-import { Place } from "../models/Place.js";
+import { Place, PlaceType } from "../models/Place.js";
 import { User, UserType } from "../models/User.js";
 import Mission from "../models/Mission.js";
 import type { ParsedQs } from "qs";
@@ -22,26 +22,29 @@ export const triggerVisitPlace = async (req: AuthRequest, resp: Response) => {
     if (!req.body)
         return resp.status(400).json({ error: "Mancano coordinate GPS" });
 
-    const validationError = await validateVisit(
+    const validationResult = await validateVisit(
         req.query.placeId,
         req.body.lat,
         req.body.lon,
     );
 
-    if (validationError)
-        return resp.status(400).json({ error: validationError });
+    if ("error" in validationResult)
+        return resp.status(400).json({ error: validationResult.error });
 
+    const place = validationResult.place;
     // placeId una volta validato può essere una stringa o un array di string
     // prendo quindi solo il primo elemento
     const placeId = Array.isArray(req.query.placeId)
         ? String(req.query.placeId[0])
         : String(req.query.placeId);
 
-    const alreadyVisited = await recordVisit(req.user, placeId);
-    await updateMissionsProgress(req.user, placeId);
+    const alreadyVisited = recordVisit(req.user, placeId);
+    await updateMissionsProgress(req.user, placeId, place);
 
     // Solo quando utente scopre luogo per la prima volta, assegna 5 EXP
     if (!alreadyVisited) req.user.addEXP(5);
+
+    await req.user.save();
 
     return resp.status(200).json({ success: true });
 };
@@ -83,8 +86,8 @@ async function validateVisit(
     placeId: string | ParsedQs | (string | ParsedQs)[] | undefined,
     lat: any,
     lon: any,
-) {
-    if (!placeId) return "Nessun luogo dato";
+) : Promise<{ place: any } | { error: string }> {
+    if (!placeId) return { error: "Nessun luogo dato" };
 
     // Estrazione sicura di placeId
     let goodPlaceId: string;
@@ -94,18 +97,18 @@ async function validateVisit(
     } else if (typeof placeId === "string") {
         goodPlaceId = placeId;
     } else {
-        return "placeId non valido"; // ParsedQs o undefined
+        return { error: "placeId non valido" }; // ParsedQs o undefined
     }
 
     // Conversione e validazione delle coordinate
     const latNum = Number(lat);
     const lonNum = Number(lon);
-    if (isNaN(latNum) || isNaN(lonNum)) return "Coordinate non valide";
+    if (isNaN(latNum) || isNaN(lonNum)) return { error: "Coordinate non valide" };
 
     // Verifica che place esista e abbia coordinate assegnate
     const place = await Place.findById(goodPlaceId).exec();
-    if (!place) return "Luogo non trovato";
-    if (!place.location) return "Luogo senza coordinate";
+    if (!place) return { error: "Luogo non trovato"};
+    if (!place.location) return { error: "Luogo senza coordinate" };
 
     // Controllo distanza entro 20 metri
     const distance = getDistanceInMeters(
@@ -117,13 +120,13 @@ async function validateVisit(
 
     // Se l'utente si trova a piu di 20 metri di distanza dal luogo, visita non valida
     if (distance > 20) {
-        return "Posizione utente fuori dal raggio consentito";
+        return { error: "Posizione utente fuori dal raggio consentito"};
     }
 
-    return null;
+    return { place };
 }
 
-async function recordVisit(user: UserType, placeId: string): Promise<boolean> {
+function recordVisit(user: UserType, placeId: string): boolean {
     const alreadyVisited = user.discoveredPlaces.some(
         (vp) => vp.placeId?.toString() === placeId,
     );
@@ -139,7 +142,7 @@ async function recordVisit(user: UserType, placeId: string): Promise<boolean> {
     return false;
 }
 
-async function updateMissionsProgress(user: UserType, placeId: string) {
+async function updateMissionsProgress(user: UserType, placeId: string, place: PlaceType) {
     // Preleva tutti gli _id delle missioni dell'utente che non sono completate
     const incompleteMissionIds = user.missionsProgresses
         .filter((mp) => !mp.completed)
@@ -150,7 +153,6 @@ async function updateMissionsProgress(user: UserType, placeId: string) {
         _id: { $in: incompleteMissionIds },
     }).lean(); // lean() per restituire plain objects
 
-    const place = await Place.findById(placeId);
     if (!place) return;
 
     for (const missionProgress of user.missionsProgresses) {
@@ -201,9 +203,14 @@ async function updateMissionsProgress(user: UserType, placeId: string) {
             missionProgress.requiredPlacesVisited.push({ placeId });
             missionProgress.progress =
                 missionProgress.requiredPlacesVisited.length;
+            
+            user.markModified("missionsProgresses");
 
+            const requiredCount =
+                mission.requiredCount ?? mission.requiredPlaces?.length ?? 1;
+                
             // Segno missione come completata e aggiungo rewardExp all'utente
-            if (missionProgress.progress >= mission.requiredCount) {
+            if (missionProgress.progress >= requiredCount) {
                 missionProgress.completed = true;
                 user.addEXP(mission.rewardExp);
             }
@@ -249,7 +256,7 @@ export const updatePreferences = async (req: AuthRequest, resp: Response) => {
         categories: categories,
     };
 
-    user.save();
+    await user.save();
 
     return resp.status(200).json({ message: "Ok" });
 };
