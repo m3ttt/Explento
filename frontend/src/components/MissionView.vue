@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Mission } from "@/lib/types/mission";
@@ -62,6 +62,9 @@ onMounted(fetchPlaceDetails);
           <div
             class="flex flex-col text-sm text-muted-foreground gap-1 leading-relaxed"
           >
+            <div class="w-full italic text-sm">
+              {{ mission.description }}
+            </div>
             <!-- Variante missione visita categorie -->
             <div v-if="mission.categories?.length">
               Visita
@@ -91,11 +94,10 @@ onMounted(fetchPlaceDetails);
             </div>
           </div>
         </div>
-
-        <div class="flex items-center">
-          <Button @click="emit('take', mission)"> Prendi </Button>
-        </div>
       </div>
     </CardContent>
+    <CardFooter>
+      <Button @click="emit('take', mission)" class="w-full"> Attiva </Button>
+    </CardFooter>
   </Card>
 </template>

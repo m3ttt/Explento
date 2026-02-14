@@ -111,28 +111,30 @@ const progress = computed(() => {
         <div class="flex justify-between items-start gap-3">
           <div class="flex-1 min-w-0 space-y-1">
             <CardTitle
-              class="flex flex-row gap-2 items-center text-base font-semibold"
+              class="flex lg:flex-row flex-col gap-2 text-base font-semibold"
             >
               {{ missionDetails.name }}
-              <Badge variant="secondary" class="text-xs font-medium">
+              <Badge
+                variant="secondary"
+                class="text-xs font-medium"
+                v-if="!missionProgress.completed"
+              >
                 +{{ missionDetails.rewardExp }} EXP
               </Badge>
+              <Badge
+                v-if="missionProgress.completed"
+                variant="outline"
+                class="text-xs"
+              >
+                Completata
+              </Badge>
             </CardTitle>
-
-            <Badge
-              v-if="missionProgress.completed"
-              variant="outline"
-              class="text-xs"
-            >
-              Completata
-            </Badge>
           </div>
-          <!-- TODO: Migliorare?? -->
           <Button
             v-if="!missionProgress.completed"
-            variant="destructive"
+            variant="secondary"
             size="icon"
-            class="opacity-0 group-hover:opacity-100 h-8"
+            class="h-8"
             @click="emit('remove', missionDetails)"
             ><X class="w-3 h-3" />
           </Button>
@@ -151,7 +153,9 @@ const progress = computed(() => {
 
         <!-- Tipologia missione visita X,Y,Z luoghi -->
         <div
-          v-if="missionDetails.requiredPlaces?.length"
+          v-if="
+            missionDetails.requiredPlaces?.length && !missionProgress.completed
+          "
           class="space-y-3 pt-3 border-t"
         >
           <p class="text-[10px] font-semibold uppercase text-muted-foreground">

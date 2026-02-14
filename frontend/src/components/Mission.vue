@@ -78,7 +78,9 @@ const handleRemoveMission = async (m: Mission) => {
 </script>
 
 <template>
-  <Card class="w-full bg-background border-none max-h-[85vh] flex flex-col">
+  <Card
+    class="w-full bg-background border-none max-h-[85vh] flex flex-col overflow-y-auto"
+  >
     <!-- Mostra tab attive se ne abbiamo alcune attive -->
     <Tabs
       :default-value="
