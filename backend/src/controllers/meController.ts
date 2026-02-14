@@ -39,7 +39,6 @@ export const triggerVisitPlace = async (req: AuthRequest, resp: Response) => {
 
     const alreadyVisited = await recordVisit(req.user, placeId);
     await updateMissionsProgress(req.user, placeId);
-    await req.user.save();
 
     // Solo quando utente scopre luogo per la prima volta, assegna 5 EXP
     if (!alreadyVisited) req.user.addEXP(5);
@@ -164,8 +163,10 @@ async function updateMissionsProgress(user: UserType, placeId: string) {
         );
         if (!mission) continue;
 
-        const hasRequiredPlaces = mission.requiredPlaces.length > 0;
-        const hasCategories = mission.categories.length > 0;
+        const hasRequiredPlaces =
+            mission.requiredPlaces && mission.requiredPlaces.length > 0;
+        const hasCategories =
+            mission.categories && mission.categories.length > 0;
 
         // verifica se il luogo non è già stato registrato come visitato nella missione
         const alreadyVisitedInMission =
