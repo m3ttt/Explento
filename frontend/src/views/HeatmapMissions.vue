@@ -23,9 +23,6 @@ import { makeOperatorAuthenticatedRequest } from "@/lib/operatorAuth";
 
 // Funzione per recuperare i dati della heatmap
 async function fetchHeatmapData() {
-  const token = localStorage.getItem("token");
-  if (!token) throw new Error("Utente non autenticato");
-
   const res = await makeOperatorAuthenticatedRequest("/heatmap/missions", {});
 
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
