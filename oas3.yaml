@@ -20,9 +20,19 @@ paths:
         required: true
         content:
           application/json:
-            example:
-              username: "mario.rossi"
-              password: "Password123!"
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "Test"
+                password:
+                  type: string
+                  format: password
+                  example: "Test"
       responses:
         "200":
           description: Login effettuato, restituisce JWT
@@ -45,34 +55,40 @@ paths:
         required: true
         content:
           application/json:
-            example:
-              username: "luca.bianchi"
-              email: "luca.bianchi@example.com"
-              name: "Luca"
-              surname: "Bianchi"
-              password: "StrongPass!2026"
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - name
+                - surname
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "luca.bianchi"
+                email: 
+                  type: string
+                  format: email
+                  example: "luca.bianchi@example.com"
+                name:
+                  type: string
+                  example: "Luca"
+                surname:
+                  type: string
+                  example: "Bianchi"
+                password:
+                  type: string
+                  example: "StrongPass!2026"
       responses:
-        "201":
-          description: Utente registrato
+        "200":
+          description: Registrazione effettuata
           content:
             application/json:
-              example:
-                id: "65f1a2c9e4b0a12f34abcd12"
-                username: "luca.bianchi"
-                email: "luca.bianchi@example.com"
-                name: "Luca"
-                surname: "Bianchi"
-                profileImage: "https://example.com/avatar_luca.jpg"
-                preferences:
-                  alsoPaid: true
-                  categories: ["montagna","cultura"]
-                expert: false
-                exp: 0
-                discoveredPlaces: []
-                suggestedPlaces: []
-                missionsProgresses: []
+              schema:
+                $ref: "#/components/schemas/User"
         "400":
-          description: Dati non validi
+          description: Dati non validi o utente già registrato
           content:
             application/json:
               example:
@@ -93,26 +109,8 @@ paths:
           description: Informazioni utente
           content:
             application/json:
-              example:
-                id: "65f1a2c9e4b0a12f34abcd12"
-                username: "luca.bianchi"
-                email: "luca.bianchi@example.com"
-                name: "Luca"
-                surname: "Bianchi"
-                profileImage: "https://example.com/avatar_luca.jpg"
-                preferences:
-                  alsoPaid: true
-                  categories: ["montagna","cultura"]
-                expert: false
-                exp: 10
-                discoveredPlaces:
-                  - placeId: "65f1a2c9e4b0a12f34abcd99"
-                    date: "2025-02-12T10:00:00.000Z"
-                suggestedPlaces:
-                  - placeId: "65f1a2c9e4b0a12f34abcd88"
-                    visited: false
-                    date: null
-                missionsProgresses: []
+              schema:
+                $ref: "#/components/schemas/User"
         "401":
           description: Non autorizzato
           content:
@@ -137,9 +135,18 @@ paths:
         required: true
         content:
           application/json:
-            example:
-              lat: 45.4642
-              lon: 9.1900
+            schema:
+              type: object
+              required:
+                - lan
+                - lon
+              properties:
+                lat:
+                  type: number
+                  example: 45.4642
+                lon: 
+                  type: number
+                  example: 9.1900
       responses:
         "200":
           description: Visita registrata
@@ -170,9 +177,8 @@ paths:
         required: true
         content:
           application/json:
-            example:
-              alsoPaid: false
-              categories: ["borgo","rilassante","per famiglie"]
+            schema:
+              $ref: "#/components/schemas/UserPreferences"
       responses:
         "200":
           description: Preferenze aggiornate
@@ -203,18 +209,26 @@ paths:
           example: true
       responses:
         "200":
-          description: Lista utenti in formato pubblico
+          description: Lista utenti
           content:
             application/json:
-              example:
-                - self: "/users/luca.bianchi"
-                  username: "luca.bianchi"
-                  exp: 10
-                  profileImage: "https://example.com/avatar_luca.jpg"
-                - self: "/users/mario.rossi"
-                  username: "mario.rossi"
-                  exp: 30
-                  profileImage: "https://example.com/avatar_mario.jpg"
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    self:
+                      type: string
+                      example: "/users/luca.bianchi"
+                    username:
+                      type: string
+                      example: "luca.bianchi"
+                    exp:
+                      type: number
+                      example: 10
+                    profileImage:
+                      type: string
+                      example: "https://example.com/avatar_luca.jpg"
         "500":
           description: Errore server
           content:
@@ -262,22 +276,41 @@ paths:
         required: true
         content:
           application/json:
-            example:
-              email: "operator@example.com"
-              password: "OperatorPass!2026"
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "operator@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "OperatorPass!2026"
+              required:
+                - email
+                - password
       responses:
         "200":
           description: Login effettuato, restituisce JWT
           content:
             application/json:
-              example:
-                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiT3BlcmF0b3IiLCJpZCI6IjEyMzQ1NiIsImlhdCI6MTY4NzYxMjM0NX0.XYxFw1Uo5vNshl5-8Y7kF_8c3zQJfhZyI"
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         "400":
           description: Credenziali non valide
           content:
             application/json:
-              example:
-                error: "Email o password non valide"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Email o password non valide"
 
   /operator/me:
     get:
@@ -290,18 +323,18 @@ paths:
           description: Operatore trovato
           content:
             application/json:
-              example:
-                id: "123456"
-                email: "operator@example.com"
-                role: "admin"
-                name: "Giulia"
-                surname: "Verdi"
+              schema:
+                $ref: "#/components/schemas/Operator"
         "401":
           description: Non autorizzato
           content:
             application/json:
-              example:
-                error: "Token mancante o scaduto"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Token mancante o scaduto"
 
   /operator/place_edit_requests:
     get:
@@ -331,25 +364,20 @@ paths:
           description: Lista richieste
           content:
             application/json:
-              example:
-                - id: "req123"
-                  placeId: "65f1a2c9e4b0a12f34abcd99"
-                  userId: "65f1a2c9e4b0a12f34abcd12"
-                  proposedChanges:
-                    name: "Nuovo Parco"
-                    description: "Parco giochi aggiornato"
-                  status: "pending"
-                  operatorId: null
-                  operatorComment: null
-                  isNewPlace: true
-                  createdAt: "2025-02-12T10:00:00.000Z"
-                  updatedAt: "2025-02-12T10:00:00.000Z"
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlaceEditRequest"
         "400":
           description: Parametri non validi
           content:
             application/json:
-              example:
-                error: "Parametro status non valido"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Parametro status non valido"
 
   /operator/place_edit_requests/{id}:
     get:
@@ -369,26 +397,18 @@ paths:
           description: Richiesta trovata
           content:
             application/json:
-              example:
-                id: "req123"
-                placeId: "65f1a2c9e4b0a12f34abcd99"
-                userId: "65f1a2c9e4b0a12f34abcd12"
-                proposedChanges:
-                  name: "Nuovo Parco"
-                  description: "Parco giochi aggiornato"
-                status: "pending"
-                operatorId: null
-                operatorComment: null
-                isNewPlace: true
-                createdAt: "2025-02-12T10:00:00.000Z"
-                updatedAt: "2025-02-12T10:00:00.000Z"
+              schema:
+                $ref: "#/components/schemas/PlaceEditRequest"
         "404":
           description: Richiesta non trovata
           content:
             application/json:
-              example:
-                error: "Richiesta non trovata"
-
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Richiesta non trovata"
     patch:
       summary: Aggiorna stato richiesta
       tags: [Operator]
@@ -405,29 +425,53 @@ paths:
         required: true
         content:
           application/json:
-            example:
-              status: "approved"
-              operatorComment: "Controllato e approvato"
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pending, approved, rejected]
+                  example: "approved"
+                operatorComment:
+                  type: string
+                  example: "Controllato e approvato"
+              required:
+                - status
       responses:
         "200":
           description: Stato aggiornato
           content:
             application/json:
-              example:
-                message: "Richiesta aggiornata"
-                status: "approved"
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Richiesta aggiornata"
+                  status:
+                    type: string
+                    enum: [pending, approved, rejected]
+                    example: "approved"
         "400":
           description: Errore richiesta non valida
           content:
             application/json:
-              example:
-                error: "Stato non valido o richiesta già processata"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Stato non valido o richiesta già processata"
         "404":
           description: Richiesta non trovata
           content:
             application/json:
-              example:
-                error: "Richiesta non trovata"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Richiesta non trovata"
 
   ##########################
   # PLACES
@@ -435,163 +479,223 @@ paths:
 
   /places:
     get:
-      summary: Lista tutti i luoghi
-      tags: [Places]
+      summary: Ottieni lista luoghi consigliati all'utente autenticato
+      tags: [Place]
       security:
         - bearerAuth: []
       parameters:
         - name: lat
           in: query
-          schema: { type: number }
-          example: 45.4642
+          schema:
+            type: number
+          description: Latitudine dell’utente per filtro distanza
         - name: lon
           in: query
-          schema: { type: number }
-          example: 9.1900
+          schema:
+            type: number
+          description: Longitudine dell’utente per filtro distanza
         - name: radius
           in: query
-          schema: { type: number }
-          example: 5
+          schema:
+            type: number
+            description: Raggio in metri per cercare luoghi vicini
       responses:
         "200":
-          description: Lista luoghi filtrata
+          description: Lista luoghi filtrati e ordinati per distanza
           content:
             application/json:
-              example:
-                - id: "65f1a2c9e4b0a12f34abcd99"
-                  name: "Parco Sempione"
-                  description: "Grande parco pubblico nel centro di Milano"
-                  categories: ["cultura","rilassante"]
-                  location:
-                    lat: 45.4700
-                    lon: 9.1800
-                  images: ["https://example.com/parco1.jpg"]
-                  isFree: true
-                - id: "65f1a2c9e4b0a12f34abcd98"
-                  name: "Museo della Scienza"
-                  description: "Esplora scienza e tecnologia"
-                  categories: ["scienza","indoor"]
-                  location:
-                    lat: 45.4660
-                    lon: 9.1930
-                  images: ["https://example.com/museo1.jpg"]
-                  isFree: false
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Place"
         "500":
-          description: Errore server
+          description: Errore del server
           content:
             application/json:
-              example:
-                error: "Errore interno del server"
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Errore del server"
 
-  /places/request:
     post:
-      summary: Richiesta nuovo luogo
-      tags: [Places]
+      summary: Crea richiesta di nuovo luogo
+      tags: [Place]
       security:
         - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
-            example:
-              name: "Biblioteca Centrale"
-              description: "Nuova biblioteca aperta in città"
-              categories: ["cultura","indoor"]
-              location:
-                lat: 45.4630
-                lon: 9.1910
-              images: ["https://example.com/biblioteca.jpg"]
-              isFree: true
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                categories:
+                  type: array
+                  items:
+                    type: string
+                location:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                    lon:
+                      type: number
+                  required:
+                    - lat
+                    - lon
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: base64
+                isFree:
+                  type: boolean
+              required:
+                - name
+                - categories
+                - location
+                - isFree
       responses:
         "201":
-          description: Richiesta creata
+          description: Richiesta creata con successo
           content:
             application/json:
-              example:
-                message: "Richiesta creata con successo"
-                request:
-                  id: "req456"
-                  placeId: "65f1a2c9e4b0a12f34abcd97"
-                  userId: "65f1a2c9e4b0a12f34abcd12"
-                  proposedChanges:
-                    name: "Biblioteca Centrale"
-                    description: "Nuova biblioteca aperta in città"
-                  status: "pending"
-                  operatorId: null
-                  operatorComment: null
-                  isNewPlace: true
-                  createdAt: "2025-02-13T10:00:00.000Z"
-                  updatedAt: "2025-02-13T10:00:00.000Z"
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Richiesta di nuovo luogo inviata e in attesa di approvazione"
+                  request:
+                    $ref: "#/components/schemas/PlaceEditRequest"
         "400":
           description: Dati non validi
           content:
             application/json:
-              example:
-                error: "Campo 'name' mancante"
-        "401":
-          description: Utente non autenticato o non esperto
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "409":
+          description: Luogo già esistente
           content:
             application/json:
-              example:
-                error: "Autenticazione richiesta o utente non esperto"
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Questo luogo esiste già nell'applicazione"
+                  placeId:
+                    type: string
 
   /places/{id}:
-    put:
-      summary: Richiesta modifica luogo esistente
-      tags: [Places]
+    get:
+      summary: Ottieni luogo per ID
+      tags: [Place]
       security:
         - bearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string }
-          example: "65f1a2c9e4b0a12f34abcd99"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Luogo trovato
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Place"
+        "400":
+          description: Luogo non trovato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Luogo non trovato"
+
+    put:
+      summary: Crea richiesta di aggiornamento luogo esistente
+      tags: [Place]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
-            example:
-              name: "Parco Sempione Aggiornato"
-              description: "Parco con nuove aree giochi"
-              categories: ["cultura","rilassante"]
-              location:
-                lat: 45.4700
-                lon: 9.1800
-              images: ["https://example.com/parco_agg.jpg"]
-              isFree: true
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                categories:
+                  type: array
+                  items:
+                    type: string
+                location:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                    lon:
+                      type: number
+                  required:
+                    - lat
+                    - lon
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: base64
+                isFree:
+                  type: boolean
+              required:
+                - name
+                - categories
+                - location
+                - isFree
       responses:
         "201":
-          description: Richiesta modifica inviata
+          description: Richiesta di modifica creata con successo
           content:
             application/json:
-              example:
-                message: "Richiesta modifica inviata"
-                request:
-                  id: "req789"
-                  placeId: "65f1a2c9e4b0a12f34abcd99"
-                  userId: "65f1a2c9e4b0a12f34abcd12"
-                  proposedChanges:
-                    name: "Parco Sempione Aggiornato"
-                    description: "Parco con nuove aree giochi"
-                  status: "pending"
-                  operatorId: null
-                  operatorComment: null
-                  isNewPlace: false
-                  createdAt: "2025-02-13T12:00:00.000Z"
-                  updatedAt: "2025-02-13T12:00:00.000Z"
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Richiesta di modifica inviata e in attesa di approvazione"
+                  request:
+                    $ref: "#/components/schemas/PlaceEditRequest"
         "400":
-          description: Dati non validi
+          description: Dati non validi o luogo non trovato
           content:
             application/json:
-              example:
-                error: "Coordinate non valide o nome mancante"
-        "401":
-          description: Utente non autenticato
-          content:
-            application/json:
-              example:
-                error: "Autenticazione richiesta"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
 
   ##########################
   # HEATMAP
@@ -643,79 +747,95 @@ paths:
           description: Lista completa missioni
           content:
             application/json:
-              example:
-                - id: "m001"
-                  name: "Esplora Parco Sempione"
-                  description: "Visita tutte le aree del parco"
-                  minLevel: 1
-                  rewardExp: 50
-                  categories: ["montagna","rilassante"]
-                  requiredPlaces:
-                    - placeId: "65f1a2c9e4b0a12f34abcd99"
-                  requiredCount: 1
-                - id: "m002"
-                  name: "Scopri Museo della Scienza"
-                  description: "Completa il percorso educativo"
-                  minLevel: 2
-                  rewardExp: 100
-                  categories: ["scienza","indoor"]
-                  requiredPlaces:
-                    - placeId: "65f1a2c9e4b0a12f34abcd98"
-                  requiredCount: 1
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Mission"
         "500":
           description: Errore server
           content:
             application/json:
-              example:
-                error: "Errore interno del server"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Errore interno del server"
 
-    post:
-      summary: Crea una nuova missione
-      tags: [Missions]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            example:
-              name: "Missione Parco"
-              description: "Esplora il parco e segnala punti di interesse"
-              minLevel: 1
-              rewardExp: 50
-              categories: ["montagna","rilassante"]
-              requiredPlaces:
-                - placeId: "65f1a2c9e4b0a12f34abcd99"
-              requiredCount: 1
-      responses:
-        "201":
-          description: Missione creata
-          content:
-            application/json:
-              example:
-                success: true
-                mission:
-                  id: "m003"
-                  name: "Missione Parco"
-                  description: "Esplora il parco e segnala punti di interesse"
-                  minLevel: 1
-                  rewardExp: 50
-                  categories: ["montagna","rilassante"]
-                  requiredPlaces:
-                    - placeId: "65f1a2c9e4b0a12f34abcd99"
-                  requiredCount: 1
-        "400":
-          description: Campi obbligatori mancanti
-          content:
-            application/json:
-              example:
-                error: "Nome e rewardExp obbligatori"
-        "500":
-          description: Errore server
-          content:
-            application/json:
-              example:
-                error: "Errore interno del server"
+    # TODO: Rimuovere in caso non si faccia l'API
+    # post:
+    #   summary: Crea una nuova missione
+    #   tags: [Missions]
+    #   security:
+    #     - bearerAuth: []
+    #   requestBody:
+    #     required: true
+    #     content:
+    #       application/json:
+    #         schema:
+    #           type: object
+    #           properties:
+    #             name:
+    #               type: string
+    #               example: "Missione Parco"
+    #             description:
+    #               type: string
+    #               example: "Esplora il parco e segnala punti di interesse"
+    #             minLevel:
+    #               type: number
+    #               example: 1
+    #             rewardExp:
+    #               type: number
+    #               example: 50
+    #             categories:
+    #               type: array
+    #               items:
+    #                 type: string
+    #               example: ["montagna","rilassante"]
+    #             requiredPlaces:
+    #               type: array
+    #               items:
+    #                 type: object
+    #                 properties:
+    #                   placeId:
+    #                     type: string
+    #                     example: "65f1a2c9e4b0a12f34abcd99"
+    #             requiredCount:
+    #               type: number
+    #               example: 1
+    #   responses:
+    #     "201":
+    #       description: Missione creata
+    #       content:
+    #         application/json:
+    #           schema:
+    #             type: object
+    #             properties:
+    #               success:
+    #                 type: boolean
+    #                 example: true
+    #               mission:
+    #                 $ref: "#/components/schemas/Mission"
+    #     "400":
+    #       description: Campi obbligatori mancanti
+    #       content:
+    #         application/json:
+    #           schema:
+    #             type: object
+    #             properties:
+    #               error:
+    #                 type: string
+    #                 example: "Nome e rewardExp obbligatori"
+    #     "500":
+    #       description: Errore server
+    #       content:
+    #         application/json:
+    #           schema:
+    #             type: object
+    #             properties:
+    #               error:
+    #                 type: string
+    #                 example: "Errore interno del server"
 
   /missions/available:
     get:
@@ -728,28 +848,30 @@ paths:
           description: Lista missioni non ancora attivate dall'utente
           content:
             application/json:
-              example:
-                - id: "m001"
-                  name: "Esplora Parco Sempione"
-                  description: "Visita tutte le aree del parco"
-                  minLevel: 1
-                  rewardExp: 50
-                  categories: ["montagna","rilassante"]
-                  requiredPlaces:
-                    - placeId: "65f1a2c9e4b0a12f34abcd99"
-                  requiredCount: 1
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Mission"
         "401":
           description: Non autenticato
           content:
             application/json:
-              example:
-                error: "Utente non autenticato"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Utente non autenticato"
         "500":
           description: Errore server
           content:
             application/json:
-              example:
-                error: "Errore interno del server"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Errore interno del server"
 
   /missions/activate:
     post:
@@ -761,39 +883,63 @@ paths:
         required: true
         content:
           application/json:
-            example:
-              missionId: "m001"
+            schema:
+              type: object
+              properties:
+                missionId:
+                  type: string
+                  example: "m001"
       responses:
         "200":
           description: Missione attivata
           content:
             application/json:
-              example:
-                success: true
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
         "400":
           description: Missione già attiva o dati mancanti
           content:
             application/json:
-              example:
-                error: "Missione già attiva"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Missione già attiva"
         "401":
           description: Non autenticato
           content:
             application/json:
-              example:
-                error: "Utente non autenticato"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Utente non autenticato"
         "404":
           description: Missione non trovata
           content:
             application/json:
-              example:
-                error: "Missione non trovata"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Missione non trovata"
         "500":
           description: Errore server
           content:
             application/json:
-              example:
-                error: "Errore interno del server"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Errore interno del server"
 
   /missions/{missionId}:
     delete:
@@ -813,33 +959,52 @@ paths:
           description: Missione rimossa
           content:
             application/json:
-              example:
-                success: true
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
         "400":
           description: missionId mancante
           content:
             application/json:
-              example:
-                error: "Parametro missionId mancante"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Parametro missionId mancante"
         "401":
           description: Non autenticato
           content:
             application/json:
-              example:
-                error: "Utente non autenticato"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Utente non autenticato"
         "404":
           description: Missione non trovata nell'account utente
           content:
             application/json:
-              example:
-                error: "Missione non trovata nell'account"
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Missione non trovata nell'account"
         "500":
           description: Errore server
           content:
             application/json:
-              example:
-                error: "Errore interno del server"
-
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Errore interno del server"
 
 components:
 
@@ -851,61 +1016,221 @@ components:
 
   schemas:
 
+    Operator:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "65f1a2c9e4b0a12f34abcd01"
+        email:
+          type: string
+          format: email
+          example: "operator@example.com"
+        role:
+          type: string
+          example: "operator"
+        name:
+          type: string
+          example: "Giulia"
+        surname:
+          type: string
+          example: "Verdi"
+      required:
+        - id
+        - email
+        - role
+
+    Place:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "65f1a2c9e4b0a12f34abcd99"
+        name:
+          type: string
+          example: "Parco Sempione"
+        description:
+          type: string
+          example: "Grande parco pubblico nel centro città"
+        categories:
+          type: array
+          items:
+            type: string
+            enum:
+              - montagna
+              - lago
+              - cultura
+              - scienza
+              - borgo
+              - città
+              - gusto
+              - indoor
+              - outdoor
+              - impegnativo
+              - rilassante
+              - per famiglie
+        location:
+          type: object
+          properties:
+            lat:
+              type: number
+              example: 45.4700
+            lon:
+              type: number
+              example: 9.1800
+          required:
+            - lat
+            - lon
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+        isFree:
+          type: boolean
+          example: true
+      required:
+        - id
+        - name
+        - categories
+        - location
+        - isFree
+
+    PlaceEditRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "req123"
+        placeId:
+          type: string
+          nullable: true
+          example: "65f1a2c9e4b0a12f34abcd99"
+        userId:
+          type: string
+          example: "65f1a2c9e4b0a12f34abcd12"
+        proposedChanges:
+          type: object
+          description: Campi modificati o proposti dall’utente
+          example:
+            name: "Nuovo Parco"
+            description: "Parco aggiornato con nuove aree"
+        isNewPlace:
+          type: boolean
+          example: false
+        status:
+          type: string
+          enum:
+            - pending
+            - approved
+            - rejected
+          example: "pending"
+        operatorId:
+          type: string
+          nullable: true
+          example: "65f1a2c9e4b0a12f34abcd50"
+        operatorComment:
+          type: string
+          nullable: true
+          example: "Controllato e approvato"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - proposedChanges
+        - status
+        - isNewPlace
+        - createdAt
+        - updatedAt
+
+    Mission:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "m001"
+        name:
+          type: string
+          example: "Esplora Parco"
+        description:
+          type: string
+          example: "Visita tutte le aree del parco"
+        minLevel:
+          type: number
+          example: 1
+        rewardExp:
+          type: number
+          example: 50
+        categories:
+          type: array
+          items:
+            type: string
+        requiredPlaces:
+          type: array
+          items:
+            type: object
+            properties:
+              placeId:
+                type: string
+                example: "65f1a2c9e4b0a12f34abcd99"
+            required:
+              - placeId
+        requiredCount:
+          type: number
+          example: 1
+      required:
+        - id
+        - name
+        - rewardExp
+        - categories
     User:
       type: object
       properties:
         id:
           type: string
           example: "65f1a2c9e4b0a12f34abcd12"
-
         username:
           type: string
           example: "mario.rossi"
-
         email:
           type: string
           format: email
           example: "mario@example.com"
-
         name:
           type: string
           example: "Mario"
-
         surname:
           type: string
           example: "Rossi"
-
         profileImage:
           type: string
           nullable: true
           example: "https://example.com/avatar.jpg"
-
         preferences:
           $ref: "#/components/schemas/UserPreferences"
-
         expert:
           type: boolean
           example: false
-
         exp:
           type: number
           example: 30
-
         discoveredPlaces:
           type: array
           items:
             $ref: "#/components/schemas/DiscoveredPlace"
-
         suggestedPlaces:
           type: array
           items:
             $ref: "#/components/schemas/SuggestedPlace"
-
         missionsProgresses:
           type: array
           items:
             $ref: "#/components/schemas/MissionProgress"
-
       required:
         - id
         - username
@@ -919,14 +1244,12 @@ components:
         - suggestedPlaces
         - missionsProgresses
 
-
     UserPreferences:
       type: object
       properties:
         alsoPaid:
           type: boolean
           example: true
-
         categories:
           type: array
           items:
@@ -947,23 +1270,19 @@ components:
       required:
         - categories
 
-
     DiscoveredPlace:
       type: object
       properties:
         placeId:
           type: string
           example: "65f1a2c9e4b0a12f34abcd99"
-
         date:
           type: string
           format: date-time
           nullable: true
           example: "2025-02-12T10:00:00.000Z"
-
       required:
         - placeId
-
 
     SuggestedPlace:
       type: object
@@ -971,21 +1290,17 @@ components:
         placeId:
           type: string
           example: "65f1a2c9e4b0a12f34abcd88"
-
         visited:
           type: boolean
           example: false
-
         date:
           type: string
           format: date-time
           nullable: true
           example: "2025-02-12T10:00:00.000Z"
-
       required:
         - placeId
         - visited
-
 
     MissionProgress:
       type: object
@@ -993,26 +1308,21 @@ components:
         missionId:
           type: string
           example: "65f1a2c9e4b0a12f34abcd77"
-
         requiredPlacesVisited:
           type: array
           items:
             $ref: "#/components/schemas/RequiredPlaceVisited"
-
         progress:
           type: number
           example: 2
-
         completed:
           type: boolean
           example: false
-
       required:
         - missionId
         - requiredPlacesVisited
         - progress
         - completed
-
 
     RequiredPlaceVisited:
       type: object
@@ -1020,89 +1330,5 @@ components:
         placeId:
           type: string
           example: "65f1a2c9e4b0a12f34abcd66"
-
       required:
         - placeId
-
-    Operator:
-      type: object
-      properties:
-        id: { type: string }
-        email: { type: string }
-        role: { type: string }
-        name: { type: string }
-        surname: { type: string }
-
-    Place:
-      type: object
-      properties:
-        id: { type: string }
-        name: { type: string }
-        description: { type: string }
-        categories:
-          type: array
-          items: { type: string }
-        location:
-          type: object
-          properties:
-            lat: { type: number }
-            lon: { type: number }
-        images:
-          type: array
-          items: { type: string }
-        isFree: { type: boolean }
-
-    PlaceEdit:
-      type: object
-      properties:
-        id: { type: string }
-        placeId: { type: string }
-        userId: { type: string }
-        proposedChanges:
-          type: object
-        status:
-          type: string
-          enum: [pending, approved, rejected]
-        operatorId: { type: string }
-        operatorComment: { type: string }
-        isNewPlace: { type: boolean }
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-
-    Mission:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        minLevel:
-          type: number
-        rewardExp:
-          type: number
-        categories:
-          type: array
-          items:
-            type: string
-        requiredPlaces:
-          type: array
-          items:
-            type: object
-            properties:
-              placeId:
-                type: string
-        requiredCount:
-          type: number
-
-
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
