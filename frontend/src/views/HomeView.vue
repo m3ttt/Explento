@@ -7,7 +7,6 @@ import UserProfile from "@/components/UserProfile.vue";
 import { onBeforeMount, Ref, ref, watch } from "vue";
 import z from "zod";
 
-import { API_ENDPOINT } from "../lib/config";
 import { User } from "@/lib/types/user";
 import { Place, PlaceSchema } from "@/lib/types/place";
 import { getPosition } from "@/lib/position";
@@ -15,6 +14,7 @@ import ModifyPlace from "@/components/ModifyPlace.vue";
 import ExpertError from "@/components/ExpertError.vue";
 import { makeUserAuthenticatedRequest, refreshUser } from "@/lib/auth";
 import Mission from "@/components/Mission.vue";
+import { toast } from "vue-sonner";
 
 // I luoghi da visualizzare come consigliati
 let places = ref<Place[]>([]);
@@ -47,36 +47,46 @@ const openEdit = (place: Place) => {
 };
 
 async function fetchPlaces() {
-  const position = await getPosition();
+  places.value = [];
 
-  // Richiediamo i luoghi vicini
-  const res = await makeUserAuthenticatedRequest(
-    // Radius in metri
-    `/places?lat=${position.coords.latitude}&lon=${position.coords.longitude}&radius=3000`,
-    {},
-  );
+  toast.promise(
+    async () => {
+      const position = await getPosition();
 
-  if (!res.ok) {
-    places.value = [];
-    return;
-  }
+      // Richiediamo i luoghi vicini
+      const res = await makeUserAuthenticatedRequest(
+        // Radius in metri
+        `/places?lat=${position.coords.latitude}&lon=${position.coords.longitude}&radius=3000`,
+        {},
+      );
 
-  const data = await res.json();
+      if (!res.ok) {
+        places.value = [];
+        throw new Error("Impossibile caricare i luoghi consigliati");
+      }
 
-  // Faccio il parsing dei dati
-  const parsed = await z.array(PlaceSchema).safeParseAsync(data);
+      const data = await res.json();
 
-  if (!parsed.success) {
-    places.value = [];
-    console.error(parsed.error);
-    return;
-  }
+      // Faccio il parsing dei dati
+      const parsed = await z.array(PlaceSchema).safeParseAsync(data);
 
-  places.value = parsed.data;
+      if (!parsed.success) {
+        places.value = [];
+        console.error(parsed.error);
+        throw new Error("Impossibile caricare i luoghi consigliati");
+      }
 
-  mapRef.value.addPlayerMarker(
-    position.coords.latitude,
-    position.coords.longitude,
+      places.value = parsed.data;
+
+      mapRef.value.addPlayerMarker(
+        position.coords.latitude,
+        position.coords.longitude,
+      );
+    },
+    {
+      loading: "Caricamento luoghi consigliati",
+      error: (err: Error) => `Errore: ${err.message}`,
+    },
   );
 }
 
