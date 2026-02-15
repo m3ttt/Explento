@@ -1,6 +1,7 @@
 import { API_ENDPOINT } from "./config";
 import { UserSchema, type User } from "../lib/types/user";
 import { ref, type Ref } from "vue";
+import { tokenToString } from "typescript";
 
 // Variabile che rappresenta l'utente
 let user = ref<User | null>(null);
@@ -68,7 +69,7 @@ export async function login(
 export async function logout() {
   // Imposto user a null per farlo sloggare
   user.value = null;
-  localStorage.setItem("token", "");
+  localStorage.setItem(storageTokenName, "");
 }
 
 export async function register(
