@@ -19,12 +19,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle2, Loader2 } from "lucide-vue-next";
+import { CheckCircle2, CircleAlert, Cross, Loader2 } from "lucide-vue-next";
 import { reactive, ref, onMounted, computed } from "vue";
 import { getPosition } from "@/lib/position";
 import { CategoriesEnum, Place } from "@/lib/types/place";
 import { formatCategory } from "@/lib/utils";
 import { makeUserAuthenticatedRequest } from "@/lib/auth";
+import { toast } from "vue-sonner";
 
 const props = defineProps<{
   initialData: Place | null;
@@ -32,10 +33,21 @@ const props = defineProps<{
 
 const isSubmitted = ref(false);
 const isLoading = ref(false);
+const hasError = ref(false);
+const loadingCoors = ref(false);
 const MAX_CATEGORIES = 3;
 
 // Determiniamo se siamo in modalità "Modifica"
 const isEditMode = computed(() => props.initialData != null);
+
+// Pulsante rosso errore + ritorno normale dopo 3 secondi
+const triggerErrorState = () => {
+  hasError.value = true;
+
+  setTimeout(() => {
+    hasError.value = false;
+  }, 3000);
+};
 
 const formData = reactive({
   name: props.initialData?.name ?? "",
@@ -51,11 +63,21 @@ const formData = reactive({
 onMounted(async () => {
   // Recuperiamo la posizione solo se è un NUOVO inserimento
   if (!isEditMode.value) {
-    const position = await getPosition();
-    if (position) {
-      formData.location.lat = position.coords.latitude;
-      formData.location.lon = position.coords.longitude;
-    }
+    toast.promise(
+      async () => {
+        loadingCoors.value = true;
+        const position = await getPosition();
+        if (position) {
+          formData.location.lat = position.coords.latitude;
+          formData.location.lon = position.coords.longitude;
+        }
+        loadingCoors.value = false;
+      },
+      {
+        loading: "Caricamento coordinate attuali",
+        error: (err: Error) => `Errore: ${err.message}`,
+      },
+    );
   }
 });
 
@@ -64,6 +86,11 @@ const updateCategories = (newValues: string[]) => {
 };
 
 const handleSubmit = async () => {
+  if (!isCategoriesValid.value) {
+    toast.error(`Devi selezionare esattamente ${MAX_CATEGORIES} categorie`);
+    triggerErrorState();
+    return;
+  }
   isLoading.value = true;
   try {
     const url = isEditMode.value
@@ -82,13 +109,20 @@ const handleSubmit = async () => {
 
     if (resp.ok) {
       isSubmitted.value = true;
+    } else {
+      triggerErrorState();
     }
   } catch (error) {
     console.error("Errore durante l'invio: ", error);
+    triggerErrorState();
   } finally {
     isLoading.value = false;
   }
 };
+
+const isCategoriesValid = computed(() => {
+  return formData.categories.length === MAX_CATEGORIES;
+});
 </script>
 
 <template>
@@ -127,12 +161,14 @@ const handleSubmit = async () => {
                 step="any"
                 v-model="formData.location.lat"
                 placeholder="Lat"
+                :disabled="loadingCoors"
                 required
               />
               <Input
                 type="number"
                 step="any"
                 v-model="formData.location.lon"
+                :disabled="loadingCoors"
                 placeholder="Lon"
                 required
               />
@@ -193,9 +229,21 @@ const handleSubmit = async () => {
         </CardContent>
 
         <CardFooter class="pt-4">
-          <Button type="submit" :disabled="isLoading" class="w-full md:w-auto">
+          <Button
+            type="submit"
+            :disabled="isLoading || !isCategoriesValid"
+            class="w-full md:w-auto"
+            :variant="hasError ? 'destructive' : 'default'"
+          >
             <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-            {{ isEditMode ? "Invia Modifiche" : "Invia Richiesta" }}
+            <CircleAlert v-if="hasError" class="h-4 w-4" />
+            {{
+              !hasError
+                ? isEditMode
+                  ? "Invia Modifiche"
+                  : "Invia Richiesta"
+                : "Errore"
+            }}
           </Button>
         </CardFooter>
       </form>
