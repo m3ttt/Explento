@@ -42,7 +42,7 @@ export const getUserByUsername = async (req: Request, res: Response) => {
 
         res.json(parsePublicUser(user));
     } catch (error) {
-        // console.error(error);
+        console.error(error);
         res.status(500).json({ message: "Errore del server" });
     }
 };
@@ -69,7 +69,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
         const parsedUsers = users.map(u => parsePublicUser(u));
         res.status(200).json(parsedUsers);
     } catch (error) {
-        // console.error(error);
+        console.error(error);
         res.status(500).json({ message: "Errore del server" });
     }
 };
