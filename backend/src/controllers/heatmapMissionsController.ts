@@ -8,32 +8,42 @@ const router = Router();
 export const heatmapMissions = async (req: AuthRequest, resp: Response) => {
     try {
         const result = await User.aggregate([
+            // 1. Considera solo le missioni completate
             { $unwind: "$missionsProgresses" },
             { $match: { "missionsProgresses.completed": true } },
+            
+            // 2. Unwind dei posti visitati (saltiamo se l'array è vuoto)
             { $unwind: "$missionsProgresses.requiredPlacesVisited" },
 
-            // Conteggio delle missioni completate per ogni place
+            // 3. CONVERSIONE: Trasforma il placeId in ObjectId per sicurezza
+            {
+                $addFields: {
+                    "tempPlaceId": { $toObjectId: "$missionsProgresses.requiredPlacesVisited.placeId" }
+                }
+            },
+
+            // 4. Conteggio per placeId
             {
                 $group: {
-                    _id: "$missionsProgresses.requiredPlacesVisited.placeId",
+                    _id: "$tempPlaceId",
                     completedMissions: { $sum: 1 },
                 },
             },
 
-            // Join con la collection Place
+            // 5. Join con la collection Place
             {
                 $lookup: {
-                    from: "places",
+                    from: "places", // Assicura che il nome su MongoDB sia esattamente "places"
                     localField: "_id",
                     foreignField: "_id",
                     as: "place",
                 },
             },
 
-            // Se non c'è corrispondenza, preserva l'array vuoto
-            { $unwind: { path: "$place", preserveNullAndEmptyArrays: true } },
+            // 6. Estrae il primo (e unico) elemento del lookup
+            { $unwind: "$place" },
 
-            // Output finale per il frontend
+            // 7. Proiezione finale
             {
                 $project: {
                     _id: 0,
@@ -44,16 +54,14 @@ export const heatmapMissions = async (req: AuthRequest, resp: Response) => {
                 },
             },
 
-            // Rimuove eventuali places senza location
-            { $match: { location: { $ne: null } } },
+            // 8. Rimuove eventuali places senza location valida
+            { $match: { "location.lat": { $exists: true }, "location.lon": { $exists: true } } },
         ]);
 
         resp.json(result);
     } catch (err) {
-        console.error(err);
-        resp.status(500).json({
-            error: "Errore durante la generazione della heatmap",
-        });
+        console.error("Errore Aggregation:", err);
+        resp.status(500).json({ error: "Errore durante la generazione della heatmap" });
     }
 };
 
