@@ -4,6 +4,7 @@ import { Place, PlaceType } from "../models/Place.js";
 import { User, UserType } from "../models/User.js";
 import Mission from "../models/Mission.js";
 import type { ParsedQs } from "qs";
+import { Types } from "mongoose";
 
 /**
  * Gestisce la visita di un utente a un luogo.
@@ -134,7 +135,7 @@ function recordVisit(user: UserType, placeId: string): boolean {
     if (alreadyVisited) return true; // luogo già visitato, non aggiungo nulla
 
     user.discoveredPlaces.push({
-        placeId,
+        placeId: new Types.ObjectId(placeId),
         visited: true,
         date: new Date(),
     });
@@ -200,7 +201,9 @@ async function updateMissionsProgress(user: UserType, placeId: string, place: Pl
         // Se il luogo conta come progresso
         if (countsForProgress) {
             // il luogo conta come progresso, aggiungo ai requiredPlacesVisited
-            missionProgress.requiredPlacesVisited.push({ placeId });
+            missionProgress.requiredPlacesVisited.push({ 
+                placeId: new Types.ObjectId(placeId) 
+            });
             missionProgress.progress =
                 missionProgress.requiredPlacesVisited.length;
             
