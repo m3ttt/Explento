@@ -151,7 +151,7 @@ async function updateMissionsProgress(user: UserType, placeId: string) {
         _id: { $in: incompleteMissionIds },
     }).lean(); // lean() per restituire plain objects
 
-    const place = await Place.findById(placeId);
+    const place = await Place.findById(placeId).exec();
     if (!place) return;
 
     for (const missionProgress of user.missionsProgresses) {
@@ -240,7 +240,7 @@ export const updatePreferences = async (req: AuthRequest, resp: Response) => {
     if (alsoPaid == null || categories == null)
         return resp.status(400).json({ error: "Informazioni mancanti" });
 
-    const user = await User.findById(req.user?._id);
+    const user = await User.findById(req.user?._id).exec();
     if (!user) return resp.status(400).json({ error: "Utente non trovato" });
 
     user.preferences = {
@@ -248,7 +248,7 @@ export const updatePreferences = async (req: AuthRequest, resp: Response) => {
         categories: categories,
     };
 
-    user.save();
+    await user.save();
 
     return resp.status(200).json({ message: "Ok" });
 };
