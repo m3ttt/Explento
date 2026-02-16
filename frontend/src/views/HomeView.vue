@@ -3,6 +3,9 @@ import Map from "@/components/Map.vue";
 import PlaceCard from "../components/PlaceCard.vue";
 import Navbar from "../components/Navbar.vue";
 import UserProfile from "@/components/UserProfile.vue";
+import ModifyPlace from "@/components/ModifyPlace.vue";
+import ExpertError from "@/components/ExpertError.vue";
+import Mission from "@/components/Mission.vue";
 
 import { onBeforeMount, Ref, ref, watch } from "vue";
 import z from "zod";
@@ -10,37 +13,38 @@ import z from "zod";
 import { User } from "@/lib/types/user";
 import { Place, PlaceSchema } from "@/lib/types/place";
 import { getPosition } from "@/lib/position";
-import ModifyPlace from "@/components/ModifyPlace.vue";
-import ExpertError from "@/components/ExpertError.vue";
 import { makeUserAuthenticatedRequest, refreshUser } from "@/lib/auth";
-import Mission from "@/components/Mission.vue";
 import { toast } from "vue-sonner";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
-// I luoghi da visualizzare come consigliati
 let places = ref<Place[]>([]);
-
-// Riferimento alla mappa
 const mapRef = ref();
 
-// Tab nella barra di navigazione attiva
 const activeTab = ref<"home" | "add" | "edit" | "profile" | "missions">("home");
 const selectedEditPlace = ref<Place | null>(null);
 
+defineProps<{
+  currentUser: Ref<User | null>;
+}>();
+
+// Cambio pagina, refresh utente/luoghi in base a dove vado
 watch(activeTab, async (newActive) => {
-  // Quando cambio pagina in home o profilo utente, aggiorna dati
-  if (newActive == "profile") {
+  if (newActive === "profile") {
     await refreshUser();
-  } else if (newActive == "home") {
+  } else if (newActive === "home") {
     await fetchPlaces();
   } else if (newActive === "missions") {
     await refreshUser();
   }
 });
 
-defineProps<{
-  currentUser: Ref<User | null>;
-}>();
-
+// Funzione per apire la modalità modifica luogo
 const openEdit = (place: Place) => {
   selectedEditPlace.value = place;
   activeTab.value = "edit";
@@ -53,25 +57,19 @@ async function fetchPlaces() {
     async () => {
       const position = await getPosition();
 
-      // Richiediamo i luoghi vicini
       const res = await makeUserAuthenticatedRequest(
-        // Radius in metri
         `/places?lat=${position.coords.latitude}&lon=${position.coords.longitude}&radius=3000`,
         {},
       );
 
       if (!res.ok) {
-        places.value = [];
         throw new Error("Impossibile caricare i luoghi consigliati");
       }
 
       const data = await res.json();
-
-      // Faccio il parsing dei dati
       const parsed = await z.array(PlaceSchema).safeParseAsync(data);
 
       if (!parsed.success) {
-        places.value = [];
         console.error(parsed.error);
         throw new Error("Impossibile caricare i luoghi consigliati");
       }
@@ -90,85 +88,102 @@ async function fetchPlaces() {
   );
 }
 
-// Esecuzione prima che carichi il componente
 onBeforeMount(fetchPlaces);
 </script>
 
 <template>
   <template v-if="currentUser.value">
-    <div class="relative w-full h-screen overflow-hidden">
+    <div class="relative w-full h-screen">
+      <!-- Mappa -->
       <div class="absolute inset-0 z-0">
         <Map ref="mapRef" />
       </div>
 
-      <!-- In modo da impostare la navbar + tab sopra tutto -->
       <div
         class="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center pointer-events-none gap-3 p-8"
       >
+        <!-- Luoghi consigliati -->
         <div
           v-if="activeTab === 'home'"
-          class="w-full overflow-x-auto snap-x snap-mandatory no-scrollbar pointer-events-auto rounded-2xl pb-6"
+          class="relative w-full md:px-12 pointer-events-auto"
         >
-          <div class="flex gap-3 w-full">
-            <PlaceCard
-              v-for="item in places"
-              :key="item._id"
-              :place="item"
-              :user="currentUser"
-              @click="
-                mapRef.flyToLocation(item.location.lat, item.location.lon)
-              "
-              @edit="openEdit"
-            />
-          </div>
+          <Carousel
+            class="w-full"
+            :opts="{
+              align: 'center',
+              // Permettere di scrollare senza limiti
+              skipSnaps: true,
+              slidesToScroll: 1,
+            }"
+          >
+            <CarouselContent>
+              <CarouselItem
+                v-for="item in places"
+                :key="item._id"
+                class="basis-auto pl-4"
+              >
+                <PlaceCard
+                  :place="item"
+                  :user="currentUser"
+                  @click="
+                    mapRef.flyToLocation(item.location.lat, item.location.lon)
+                  "
+                  @edit="openEdit"
+                />
+              </CarouselItem>
+            </CarouselContent>
+
+            <CarouselPrevious class="hidden md:flex -left-10" />
+            <CarouselNext class="hidden md:flex -right-10" />
+          </Carousel>
         </div>
 
+        <!-- Profilo -->
         <UserProfile
+          v-else-if="activeTab === 'profile'"
           class="w-full max-w-md pointer-events-auto pb-6"
           :user="currentUser"
-          v-else-if="activeTab === 'profile'"
         />
 
+        <!-- Aggiunta luogo -->
         <ModifyPlace
-          class="w-full max-w-md pointer-events-auto pb-6"
           v-else-if="activeTab === 'add' && currentUser.value.expert"
+          class="w-full max-w-md pointer-events-auto pb-6"
           :initialData="null"
         />
 
+        <!-- Modifica luogo -->
         <ModifyPlace
           v-else-if="activeTab === 'edit' && currentUser.value.expert"
           class="w-full max-w-md pointer-events-auto pb-6"
           :initialData="selectedEditPlace"
         />
 
+        <!-- Non Expert -->
         <ExpertError
-          class="w-full max-w-md pointer-events-auto pb-6"
           v-else-if="
             (activeTab === 'add' && !currentUser.value.expert) ||
             (activeTab === 'edit' && !currentUser.value.expert)
           "
+          class="w-full max-w-md pointer-events-auto pb-6"
         />
 
+        <!-- Missioni -->
         <Mission
+          v-else-if="activeTab === 'missions'"
           class="w-full max-w-md pointer-events-auto pb-6"
           :user="currentUser"
-          v-else-if="activeTab === 'missions'"
         />
 
         <Navbar
           :activeTab="activeTab"
-          @change-tab="
-            (tabName: 'home' | 'profile' | 'add') => {
-              activeTab = tabName;
-            }
-          "
+          @change-tab="(tabName) => (activeTab = tabName)"
         />
       </div>
     </div>
   </template>
 </template>
 
-<!-- Togliere le barre di scorrimento -->
 <style scoped>
 .no-scrollbar::-webkit-scrollbar {
   display: none;
