@@ -80,7 +80,7 @@ export const registerUser = async (req: Request, res: Response) => {
         });
         res.status(200).json(newUser);
     } catch (e) {
-        // console.log(e);
+        console.log(e);
         res.status(400).json({ error: "Errore nella creazione dell'utente" });
     }
 };
