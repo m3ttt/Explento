@@ -96,7 +96,7 @@ onBeforeMount(fetchPlaces);
     <div class="relative w-full h-screen">
       <!-- Mappa -->
       <div class="absolute inset-0 z-0">
-        <Map ref="mapRef" />
+        <Map ref="mapRef" @click="activeTab = 'home'" />
       </div>
 
       <div
