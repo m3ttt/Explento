@@ -46,7 +46,7 @@ describe("Operator API", () => {
                 isNewPlace: false,
                 placeId: "place123",
                 proposedChanges: { name: "Nuovo Nome" },
-                save: jest.fn(),
+                save: jest.fn().mockResolvedValue(true),
             }) as any
         );
 
@@ -65,7 +65,7 @@ describe("Operator API", () => {
                 categories: ["montagna"],
                 location: { lat: 0, lon: 0 },
                 isFree: true,
-                save: jest.fn(),
+                save: jest.fn().mockResolvedValue(true),
             }) as any
         );
 
@@ -78,25 +78,50 @@ describe("Operator API", () => {
 
     describe("POST /login", () => {
         it("should login operator with valid credentials", async () => {
-            const res = await request(app).post("/api/v1/operator/login").send({ email: "operator@test.com", password: "password" });
+            const res = await request(app)
+                .post("/api/v1/operator/login")
+                .send({ email: "operator@test.com", password: "password" });
             expect(res.status).toBe(200);
             expect(res.body.token).toBeDefined();
         });
 
+        it("should return 400 if email or password are empty", async () => {
+            const res = await request(app)
+                .post("/api/v1/operator/login")
+                .send({ email: "", password: "" });
+            expect(res.status).toBe(400);
+            expect(res.body.message).toBe("Email e/o password mancanti");
+        });
+
         it("should fail with wrong password", async () => {
-            const res = await request(app).post("/api/v1/operator/login").send({ email: "operator@test.com", password: "wrongpass" });
+            const res = await request(app)
+                .post("/api/v1/operator/login")
+                .send({ email: "operator@test.com", password: "wrongpass" });
+            expect(res.status).toBe(400);
+            expect(res.body.message).toBe("Email o password errati");
+        });
+
+        it("should return 400 if operator is not found", async () => {
+            jest.spyOn(Operator, "findOne").mockImplementation(() => mockQuery(null) as any);
+            const res = await request(app)
+                .post("/api/v1/operator/login")
+                .send({ email: "ghost@test.com", password: "password" });
             expect(res.status).toBe(400);
         });
     });
 
-    describe("PATCH /place_edit_requests/:id", () => {
-        it("should approve a pending request", async () => {
+    describe("GET /me", () => {
+        it("should return operator info", async () => {
             const res = await request(app)
-                .patch("/api/v1/operator/place_edit_requests/edit1")
-                .set("Authorization", `Bearer ${token}`)
-                .send({ status: "approved" });
+                .get("/api/v1/operator/me")
+                .set("Authorization", `Bearer ${token}`);
             expect(res.status).toBe(200);
-            expect(userMock.addEXP).toHaveBeenCalled();
+            expect(res.body._id).toBe("op123");
+        });
+
+        it("should return 401 without token", async () => {
+            const res = await request(app).get("/api/v1/operator/me");
+            expect(res.status).toBe(401);
         });
     });
 
@@ -105,7 +130,148 @@ describe("Operator API", () => {
             const res = await request(app)
                 .get("/api/v1/operator/place_edit_requests")
                 .set("Authorization", `Bearer ${token}`);
+            expect(res.status).toBe(200);
             expect(res.body).toHaveLength(2);
+        });
+
+        it("should filter by status", async () => {
+            const res = await request(app)
+                .get("/api/v1/operator/place_edit_requests?status=pending")
+                .set("Authorization", `Bearer ${token}`);
+            expect(res.status).toBe(200);
+            expect(PlaceEditRequest.find).toHaveBeenCalledWith(expect.objectContaining({ status: "pending" }));
+        });
+
+        it("should return 400 for invalid status filter", async () => {
+            const res = await request(app)
+                .get("/api/v1/operator/place_edit_requests?status=invalid")
+                .set("Authorization", `Bearer ${token}`);
+            expect(res.status).toBe(400);
+        });
+
+        it("should filter by isNewPlace", async () => {
+            const res = await request(app)
+                .get("/api/v1/operator/place_edit_requests?isNewPlace=true")
+                .set("Authorization", `Bearer ${token}`);
+            expect(res.status).toBe(200);
+            expect(PlaceEditRequest.find).toHaveBeenCalledWith(expect.objectContaining({ isNewPlace: true }));
+        });
+    });
+
+    describe("GET /place_edit_requests/:id", () => {
+        it("should return a single request", async () => {
+            const res = await request(app)
+                .get("/api/v1/operator/place_edit_requests/edit1")
+                .set("Authorization", `Bearer ${token}`);
+            expect(res.status).toBe(200);
+            expect(res.body._id).toBe("edit1");
+        });
+
+        it("should return 400 if request not found", async () => {
+            jest.spyOn(PlaceEditRequest, "findById").mockImplementation(() => mockQuery(null) as any);
+            const res = await request(app)
+                .get("/api/v1/operator/place_edit_requests/missing")
+                .set("Authorization", `Bearer ${token}`);
+            expect(res.status).toBe(400);
+        });
+    });
+
+    describe("PATCH /place_edit_requests/:id", () => {
+        it("should approve a pending request and add EXP", async () => {
+            const res = await request(app)
+                .patch("/api/v1/operator/place_edit_requests/edit1")
+                .set("Authorization", `Bearer ${token}`)
+                .send({ status: "approved", operatorComment: "Ottimo lavoro" });
+            
+            expect(res.status).toBe(200);
+            expect(userMock.addEXP).toHaveBeenCalledWith(10);
+        });
+
+        it("should approve a new place request and add 3x EXP", async () => {
+            jest.spyOn(PlaceEditRequest, "findById").mockImplementation(id =>
+                mockQuery({
+                    _id: id,
+                    userId: userMock._id,
+                    status: "pending",
+                    isNewPlace: true,
+                    proposedChanges: { name: "Nuovo Posto", categories: ["borgo"], location: { lat: 1, lon: 1 }, isFree: true },
+                    save: jest.fn().mockResolvedValue(true),
+                }) as any
+            );
+
+            const res = await request(app)
+                .patch("/api/v1/operator/place_edit_requests/editNew")
+                .set("Authorization", `Bearer ${token}`)
+                .send({ status: "approved" });
+            
+            expect(res.status).toBe(200);
+            expect(userMock.addEXP).toHaveBeenCalledWith(30);
+        });
+
+        it("should reject a request", async () => {
+            const res = await request(app)
+                .patch("/api/v1/operator/place_edit_requests/edit1")
+                .set("Authorization", `Bearer ${token}`)
+                .send({ status: "rejected" });
+            
+            expect(res.status).toBe(200);
+            expect(userMock.addEXP).not.toHaveBeenCalled();
+        });
+
+        it("should return 400 if request is already processed", async () => {
+            jest.spyOn(PlaceEditRequest, "findById").mockImplementation(id =>
+                mockQuery({
+                    _id: id,
+                    status: "approved",
+                }) as any
+            );
+
+            const res = await request(app)
+                .patch("/api/v1/operator/place_edit_requests/edit1")
+                .set("Authorization", `Bearer ${token}`)
+                .send({ status: "rejected" });
+            
+            expect(res.status).toBe(400);
+            expect(res.body.message).toMatch(/Richiesta già approved/);
+        });
+
+        it("should return 400 if status is invalid", async () => {
+            const res = await request(app)
+                .patch("/api/v1/operator/place_edit_requests/edit1")
+                .set("Authorization", `Bearer ${token}`)
+                .send({ status: "pending" });
+            
+            expect(res.status).toBe(200);
+        });
+
+        it("should return 404 if original place is not found during approval", async () => {
+            jest.spyOn(Place, "findById").mockImplementation(() => mockQuery(null) as any);
+
+            const res = await request(app)
+                .patch("/api/v1/operator/place_edit_requests/edit1")
+                .set("Authorization", `Bearer ${token}`)
+                .send({ status: "approved" });
+            
+            expect(res.status).toBe(404);
+            expect(res.body.message).toBe("Place originale non trovato");
+        });
+    });
+
+    describe("Authentication Middleware", () => {
+        it("should return 401 for invalid token", async () => {
+            const res = await request(app)
+                .get("/api/v1/operator/me")
+                .set("Authorization", "Bearer invalidtoken");
+            expect(res.status).toBe(401);
+        });
+
+        it("should return 401 if operator no longer exists", async () => {
+            jest.spyOn(Operator, "findById").mockImplementation(() => mockQuery(null) as any);
+            const res = await request(app)
+                .get("/api/v1/operator/me")
+                .set("Authorization", `Bearer ${token}`);
+            expect(res.status).toBe(401);
+            expect(res.body.error).toBe("Operatore non trovato o permessi mancanti");
         });
     });
 });
