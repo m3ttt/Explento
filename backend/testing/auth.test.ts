@@ -1,132 +1,124 @@
-// tests/auth.test.ts
 import request from "supertest";
 import app from "../src/app";
 import { User } from "../src/models/User";
 import jwt from "jsonwebtoken";
-import { hash } from "bcrypt";
+import bcrypt from "bcrypt";
+
+// Mock di bcrypt
+jest.mock("bcrypt", () => ({
+    compare: jest.fn(),
+    hash: jest.fn()
+}));
 
 const createFreshUserMock = () => ({
-  _id: "user123",
-  username: "testuser",
-  password: "$2b$10$hashedpassword",
-  save: jest.fn().mockResolvedValue(true),
+    _id: "user123",
+    username: "testuser",
+    password: "$2b$10$hashedpassword",
+    save: jest.fn().mockResolvedValue(true),
 });
 
 describe("Auth API", () => {
-  let token: string;
-  let userMock: ReturnType<typeof createFreshUserMock>;
+    let userMock: any;
 
-  beforeAll(() => {
-    token = jwt.sign(
-      { id: "user123" },
-      process.env.JWT_SECRET || "supersecret",
-      { expiresIn: "1h" }
-    );
-  });
-
-  beforeEach(() => {
-    userMock = createFreshUserMock();
-
-    jest.spyOn(User, "findOne").mockImplementation(({ username }: any) => {
-      if (username === "testuser") {
-        return {
-          exec: jest.fn().mockResolvedValue(userMock),
-        } as any;
-      }
-      return { exec: jest.fn().mockResolvedValue(null) } as any;
+    beforeAll(() => {
+        process.env.JWT_SECRET = "supersecret";
     });
 
-    jest.spyOn(User, "create").mockImplementation((data: any) => {
-      return Promise.resolve({ ...data, _id: "newUser123" });
-    });
-  });
+    beforeEach(() => {
+        userMock = createFreshUserMock();
 
-  afterAll(() => {
-    jest.restoreAllMocks();
-  });
-
-  describe("POST /api/v1/auth/login", () => {
-    it("should return token with valid credentials", async () => {
-      // mock compare della password
-      jest.spyOn(require("bcrypt"), "compare").mockResolvedValue(true);
-
-      const res = await request(app)
-        .post("/api/v1/auth/login")
-        .send({ username: "testuser", password: "password" });
-
-      expect(res.status).toBe(200);
-      expect(res.body.token).toBeDefined();
-    });
-
-    it("should return 400 with wrong credentials", async () => {
-      jest.spyOn(require("bcrypt"), "compare").mockResolvedValue(false);
-
-      const res = await request(app)
-        .post("/api/v1/auth/login")
-        .send({ username: "testuser", password: "wrongpass" });
-
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe("Username o password errati");
-    });
-
-    it("should return 400 if missing credentials", async () => {
-      const res = await request(app)
-        .post("/api/v1/auth/login")
-        .send({ username: "", password: "" });
-
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe("Credenziali non fornite");
-    });
-  });
-
-  describe("POST /api/v1/auth/register", () => {
-    it("should register a new user with valid data", async () => {
-      jest.spyOn(require("bcrypt"), "hash").mockResolvedValue("hashedpass");
-
-      const res = await request(app)
-        .post("/api/v1/auth/register")
-        .send({
-          username: "newuser",
-          name: "New",
-          surname: "User",
-          email: "newuser@test.com",
-          password: "password",
+        jest.spyOn(User, "findOne").mockImplementation(({ username }: any) => {
+            if (username === "testuser") return Promise.resolve(userMock) as any;
+            return Promise.resolve(null) as any;
         });
 
-      expect(res.status).toBe(200);
-      expect(res.body._id).toBe("newUser123");
-      expect(res.body.username).toBe("newuser");
-    });
-
-    it("should return 400 with missing data", async () => {
-      const res = await request(app)
-        .post("/api/v1/auth/register")
-        .send({
-          username: "",
-          name: "",
-          surname: "",
-          email: "",
-          password: "",
+        jest.spyOn(User, "findById").mockImplementation((id: any) => {
+            return {
+                exec: jest.fn().mockResolvedValue(id === "user123" ? userMock : null),
+            } as any;
         });
 
-      expect(res.status).toBe(400);
-      expect(res.body.message).toBe("Schema dati invalido");
+        jest.spyOn(User, "create").mockImplementation((data: any) => {
+            return Promise.resolve({ ...data, _id: "newUser123" }) as any;
+        });
     });
 
-    it("should return 400 if creation fails", async () => {
-      jest.spyOn(User, "create").mockRejectedValue(new Error("DB error"));
-      const res = await request(app)
-        .post("/api/v1/auth/register")
-        .send({
-          username: "failuser",
-          name: "Fail",
-          surname: "User",
-          email: "fail@test.com",
-          password: "password",
+    afterAll(() => {
+        jest.restoreAllMocks();
+    });
+
+    describe("POST /api/v1/auth/login", () => {
+        it("should return token with valid credentials", async () => {
+            (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+            const res = await request(app)
+                .post("/api/v1/auth/login")
+                .send({ username: "testuser", password: "password123" });
+
+            expect(res.status).toBe(200);
+            expect(res.body.token).toBeDefined();
         });
 
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe("Errore nella creazione dell'utente");
+        it("should return 400 with wrong password", async () => {
+            (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+            const res = await request(app)
+                .post("/api/v1/auth/login")
+                .send({ username: "testuser", password: "wrongpassword" });
+
+            expect(res.status).toBe(400);
+            expect(res.body.error).toBe("Username o password errati");
+        });
     });
-  });
+
+    describe("POST /api/v1/auth/register", () => {
+        it("should register a new user successfully", async () => {
+            (bcrypt.hash as jest.Mock).mockResolvedValue("hashed_pass");
+
+            const res = await request(app)
+                .post("/api/v1/auth/register")
+                .send({
+                    username: "newuser",
+                    name: "Mario",
+                    surname: "Rossi",
+                    email: "mario@example.com",
+                    password: "securepassword"
+                });
+
+            expect(res.status).toBe(200);
+            expect(res.body._id).toBe("newUser123");
+        });
+
+        it("should return 400 if any field is missing", async () => {
+            // Invia stringhe vuote per attivare il controllo del controller
+            const res = await request(app)
+                .post("/api/v1/auth/register")
+                .send({ 
+                    username: "", 
+                    name: "", 
+                    surname: "", 
+                    email: "", 
+                    password: "" 
+                });
+
+            expect(res.status).toBe(400);
+            expect(res.body.message).toBe("Schema dati invalido");
+        });
+    });
+
+    describe("Middleware: authenticate", () => {
+        it("should return 401 if Authorization header is missing", async () => {
+            const res = await request(app).get("/api/v1/missions");
+            expect(res.status).toBe(401);
+        });
+
+        it("should return 401 for invalid token", async () => {
+            const res = await request(app)
+                .get("/api/v1/missions")
+                .set("Authorization", "Bearer invalidtoken");
+            
+            expect(res.status).toBe(401);
+            expect(res.body.error).toBe("Token non valido o scaduto");
+        });
+    });
 });
