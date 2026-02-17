@@ -177,7 +177,7 @@ onUnmounted(() => {
         <!-- Luoghi consigliati -->
         <div
           v-if="activeTab === 'home'"
-          class="relative md:px-12 pointer-events-auto"
+          class="relative w-full md:px-12 pointer-events-auto"
         >
           <template v-if="places.length > 0" class="w-full">
             <Carousel
