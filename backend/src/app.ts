@@ -24,7 +24,7 @@ app.use(express.json());
 // da qualsiasi origine (backend e frontend separati)
 app.use(
     cors({
-        origin: "*",
+        origin: process.env.FRONTEND_URL || "*", // In locale userà "*" o localhost, in prod. l'URL
     }),
 );
 
