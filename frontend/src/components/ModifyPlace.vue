@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle2, CircleAlert, Cross, Loader2 } from "lucide-vue-next";
 import { reactive, ref, onMounted, computed } from "vue";
-import { getPosition } from "@/lib/position";
+import { fallBackPosition, getPosition } from "@/lib/position";
 import { CategoriesEnum, Place } from "@/lib/types/place";
 import { formatCategory } from "@/lib/utils";
 import { makeUserAuthenticatedRequest } from "@/lib/auth";
@@ -66,12 +66,21 @@ onMounted(async () => {
     toast.promise(
       async () => {
         loadingCoors.value = true;
-        const position = await getPosition();
-        if (position) {
-          formData.location.lat = position.coords.latitude;
-          formData.location.lon = position.coords.longitude;
+        try {
+          const position = await getPosition();
+          if (position) {
+            formData.location.lat = position.coords.latitude;
+            formData.location.lon = position.coords.longitude;
+          }
+        } catch (_) {
+          toast.error(
+            "Impossibile stabilire posizione. Uso la posizione predefinita",
+          );
+          formData.location.lat = fallBackPosition.coords.latitude;
+          formData.location.lon = fallBackPosition.coords.longitude;
+        } finally {
+          loadingCoors.value = false;
         }
-        loadingCoors.value = false;
       },
       {
         loading: "Caricamento coordinate attuali",
@@ -94,7 +103,7 @@ const handleSubmit = async () => {
   isLoading.value = true;
   try {
     const url = isEditMode.value
-      ? `/places/${props.initialData._id}`
+      ? `/places/${props.initialData?._id}`
       : `/places/request`;
 
     const method = isEditMode.value ? "PUT" : "POST";
@@ -110,10 +119,13 @@ const handleSubmit = async () => {
     if (resp.ok) {
       isSubmitted.value = true;
     } else {
+      toast.error(
+        "Impossibile inviare la richiesta. Codice server: " + resp.status,
+      );
       triggerErrorState();
     }
-  } catch (error) {
-    console.error("Errore durante l'invio: ", error);
+  } catch (_) {
+    toast.error("Errore di rete durante l'invio");
     triggerErrorState();
   } finally {
     isLoading.value = false;
