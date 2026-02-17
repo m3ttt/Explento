@@ -7,7 +7,7 @@ import ModifyPlace from "@/components/ModifyPlace.vue";
 import ExpertError from "@/components/ExpertError.vue";
 import Mission from "@/components/Mission.vue";
 
-import { onBeforeMount, onUnmounted, Ref, ref, watch } from "vue";
+import { onBeforeMount, onMounted, onUnmounted, Ref, ref, watch } from "vue";
 import z from "zod";
 
 import { User } from "@/lib/types/user";
@@ -73,11 +73,13 @@ const openEdit = (place: Place) => {
 };
 
 async function fetchPlaces() {
+  loadingPlaces.value = true;
   places.value = [];
 
   let position: GeolocationPosition | null = null;
 
   try {
+    // getPosition() ritorna errore se GPS non disponibile o permesso non garantito
     await toast
       .promise(
         async () => {
@@ -93,6 +95,7 @@ async function fetchPlaces() {
       )
       ?.unwrap();
   } catch (err) {
+    // Errore -> Ritorno posizione di fallback
     toast.error(
       "Impossibile stabilire posizione. Uso la posizione predefinita",
     );
@@ -128,6 +131,8 @@ async function fetchPlaces() {
         position.coords.latitude,
         position.coords.longitude,
       );
+
+      loadingPlaces.value = false;
     },
     {
       loading: "Caricamento luoghi consigliati",
@@ -238,7 +243,8 @@ onUnmounted(() => {
             </Carousel>
           </template>
 
-          <div v-else class="w-full flex justify-center">
+          <!-- Card nessun luogo trovato -->
+          <div v-else-if="!loadingPlaces" class="w-full flex justify-center">
             <Card
               class="w-full max-w-md border-0 bg-background/95 backdrop-blur-sm shadow-lg rounded-2xl"
             >

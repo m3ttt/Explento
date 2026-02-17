@@ -26,6 +26,11 @@ const fetchPlaceDetails = async () => {
       const response = await makeUserAuthenticatedRequest(
         `/places/${p.placeId}`,
       );
+
+      if (!response.ok) {
+        toast.error(`Errore caricamento dati missione: ${props.mission.name}`);
+      }
+
       const data = await response.json();
       return { id: p.placeId, name: data.name };
     });
