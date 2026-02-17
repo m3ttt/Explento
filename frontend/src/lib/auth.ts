@@ -137,10 +137,13 @@ export async function makeUserAuthenticatedRequest(
     Authorization: `Bearer ${token}`,
   };
 
-  const resp = await fetch(`${API_ENDPOINT}${path}`, {
-    ...options,
-    headers,
-  });
-
-  return resp;
+  try {
+    const resp = await fetch(`${API_ENDPOINT}${path}`, {
+      ...options,
+      headers,
+    });
+    return resp;
+  } catch (err: any) {
+    throw new Error(err);
+  }
 }
