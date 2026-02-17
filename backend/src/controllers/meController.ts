@@ -101,6 +101,10 @@ async function validateVisit(
         return { error: "placeId non valido" }; // ParsedQs o undefined
     }
 
+    if (!Types.ObjectId.isValid(goodPlaceId)) {
+        return { error: "Formato placeId non valido" };
+    }
+
     // Conversione e validazione delle coordinate
     const latNum = Number(lat);
     const lonNum = Number(lon);
@@ -251,7 +255,7 @@ export const updatePreferences = async (req: AuthRequest, resp: Response) => {
     if (alsoPaid == null || categories == null)
         return resp.status(400).json({ error: "Informazioni mancanti" });
 
-    const user = await User.findById(req.user?._id);
+    const user = await User.findById(req.user?._id).exec();
     if (!user) return resp.status(400).json({ error: "Utente non trovato" });
 
     user.preferences = {

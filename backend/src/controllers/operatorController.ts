@@ -20,7 +20,7 @@ export const loginOperator = async (req: Request, resp: Response) => {
     }
 
     // Cerca nel DB un operatore con la stessa email
-    const foundOperator = await Operator.findOne({ email: email });
+    const foundOperator = await Operator.findOne({ email: email }).exec();
     if (!foundOperator) {
         return resp.status(400).json({ message: "Email o password errati" });
     }
@@ -77,7 +77,7 @@ export const getAllPlaceEdits = async (
         query.isNewPlace = isNewPlace === "true";
     }
 
-    const reqs = await PlaceEditRequest.find(query);
+    const reqs = await PlaceEditRequest.find(query).exec();
 
     return resp.status(200).json(reqs);
 };
@@ -92,7 +92,7 @@ export const getPlaceEdits = async (
         return res.status(400).json({ message: "Nessun id inserito" });
     }
 
-    const placeEdit = await PlaceEditRequest.findById(id);
+    const placeEdit = await PlaceEditRequest.findById(id).exec();
     if (!placeEdit) {
         return res
             .status(400)
@@ -120,7 +120,7 @@ export const updatePlaceEdits = async (
         return resp.status(400).json({ message: "Stato non valido" });
     }
 
-    const editRequest = await PlaceEditRequest.findById(id);
+    const editRequest = await PlaceEditRequest.findById(id).exec();
     if (!editRequest) {
         return resp.status(404).json({ message: "Richiesta non trovata" });
     }
@@ -136,7 +136,7 @@ export const updatePlaceEdits = async (
     editRequest.operatorComment = operatorComment || "";
     editRequest.operatorId = req.operator._id; // Utilizza id operatore preso dalla request
 
-    const user = await User.findById(editRequest.userId);
+    const user = await User.findById(editRequest.userId).exec();
     if (!user)
         return resp
             .status(400)
@@ -156,7 +156,7 @@ export const updatePlaceEdits = async (
             user.addEXP(3 * XP_PER_APPROVED_REQUEST);
         } else {
             // Modifica luogo esistente
-            const place = await Place.findById(editRequest.placeId);
+            const place = await Place.findById(editRequest.placeId).exec();
             if (!place) {
                 return resp
                     .status(404)
