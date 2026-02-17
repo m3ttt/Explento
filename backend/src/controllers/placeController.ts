@@ -139,7 +139,7 @@ function validatePlaceBase(
 }
 
 // Normalizzazione avanzata stringa
-const normalizeString = (str: string) => {
+export const normalizeString = (str: string) => {
     return str
         .normalize("NFD") // separa accenti
         .replace(/[\u0300-\u036f]/g, "") // rimuove accenti
@@ -263,6 +263,19 @@ export const createUpdatePlaceRequest = async (
         if (validationError)
             return res.status(400).json({ error: validationError });
 
+        // Calcola il nome normalizzato
+        const normalized = normalizeString(name);
+
+        // Controlla se il nuovo nome è già preso da un ALTRO posto
+        const duplicatePlace = await Place.findOne({ 
+            normalizedName: normalized, 
+            _id: { $ne: id } // Cerca un posto con quel nome che NON sia quello che stiamo modificando
+        });
+
+        if (duplicatePlace) {
+            return res.status(409).json({ message: "Esiste già un altro luogo con questo nome" });
+        }
+
         // Creazione della richiesta di modifica
         const editRequest = new PlaceEditRequest({
             userId: req.user._id,
@@ -271,6 +284,7 @@ export const createUpdatePlaceRequest = async (
             status: "pending",
             proposedChanges: {
                 name,
+                normalizedName: normalized,
                 description,
                 categories,
                 location,

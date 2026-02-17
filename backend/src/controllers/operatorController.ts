@@ -6,6 +6,7 @@ const { sign } = pkg;
 import { PlaceEditRequest } from "../models/PlaceEditRequest.js";
 import { Place } from "../models/Place.js";
 import { User } from "../models/User.js";
+import { normalizeString } from "./placeController.js";
 
 import type { OperatorAuthRequest } from "../routes/operator.js";
 
@@ -162,6 +163,11 @@ export const updatePlaceEdits = async (
                     .json({ message: "Place originale non trovato" });
             }
 
+            if (editRequest.proposedChanges.name) {
+                // Ricalcola il nome "pulito" per il database
+                place.set('normalizedName', normalizeString(editRequest.proposedChanges.name));
+            }
+
             // Mongoose Merge: aggiorna solo i campi presenti in proposedChanges
             Object.assign(place, editRequest.proposedChanges);
 
@@ -170,6 +176,8 @@ export const updatePlaceEdits = async (
             // Assegna Exp all'utente
             user.addEXP(XP_PER_APPROVED_REQUEST);
         }
+
+        await user.save();
     }
 
     await editRequest.save();
