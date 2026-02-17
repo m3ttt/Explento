@@ -68,11 +68,13 @@ const openEdit = (place: Place) => {
   activeTab.value = "edit";
 };
 
-async function fetchPlaces(position: GeolocationPosition) {
+async function fetchPlaces() {
   places.value = [];
 
   toast.promise(
     async () => {
+      const position = await getPosition();
+
       const res = await makeUserAuthenticatedRequest(
         `/places?lat=${position.coords.latitude}&lon=${position.coords.longitude}&radius=3000`,
         {},
@@ -105,11 +107,7 @@ async function fetchPlaces(position: GeolocationPosition) {
 }
 
 onBeforeMount(async () => {
-  const position = await getPosition();
-  lastValidPosition = position;
-  console.log("Prima posizione trovata");
-
-  await fetchPlaces(position);
+  await fetchPlaces();
 
   watchId = watchUserPosition((position) => {
     const { latitude, longitude, accuracy } = position.coords;
@@ -151,7 +149,7 @@ onBeforeMount(async () => {
     console.log("Movimento trovato. Resetto timer");
 
     stopTimer = setTimeout(() => {
-      fetchPlaces(position);
+      fetchPlaces();
     }, STOP_DELAY);
   });
 });
