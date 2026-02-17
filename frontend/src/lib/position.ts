@@ -1,7 +1,7 @@
 const DEFAULT_LAT = 46.0726;
 const DEFAULT_LON = 11.1191;
 
-const fallBackPosition = {
+export const fallBackPosition = {
   coords: {
     latitude: DEFAULT_LAT,
     longitude: DEFAULT_LON,
@@ -16,13 +16,13 @@ const fallBackPosition = {
 
 export const getPosition = async (): Promise<GeolocationPosition> => {
   if (!navigator.geolocation) {
-    return fallBackPosition;
+    throw new Error("Impossibile stabilire la posizione");
   }
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve(pos),
-      () => resolve(fallBackPosition),
+      () => reject("Impossibile stabilire la posizione"),
     );
   });
 };

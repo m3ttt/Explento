@@ -13,6 +13,7 @@ import z from "zod";
 import { User } from "@/lib/types/user";
 import { Place, PlaceSchema } from "@/lib/types/place";
 import {
+  fallBackPosition,
   getDistanceInMeters,
   getPosition,
   watchUserPosition,
@@ -40,6 +41,7 @@ const mapRef = ref();
 
 const activeTab = ref<"home" | "add" | "edit" | "profile" | "missions">("home");
 const selectedEditPlace = ref<Place | null>(null);
+const loadingPlaces = ref(false);
 
 let watchId: number | null = null;
 let stopTimer: ReturnType<typeof setTimeout> | null = null;
@@ -57,6 +59,8 @@ defineProps<{
 watch(activeTab, async (newActive) => {
   if (newActive === "profile") {
     await refreshUser();
+  } else if (newActive === "home") {
+    await fetchPlaces();
   } else if (newActive === "missions") {
     await refreshUser();
   }
@@ -71,9 +75,35 @@ const openEdit = (place: Place) => {
 async function fetchPlaces() {
   places.value = [];
 
+  let position: GeolocationPosition | null = null;
+
+  try {
+    await toast
+      .promise(
+        async () => {
+          try {
+            position = await getPosition();
+          } catch (err: any) {
+            throw new Error(err);
+          }
+        },
+        {
+          loading: "Caricamento posizione",
+        },
+      )
+      ?.unwrap();
+  } catch (err) {
+    toast.error(
+      "Impossibile stabilire posizione. Uso la posizione predefinita",
+    );
+    position = fallBackPosition;
+  }
+
   toast.promise(
     async () => {
-      const position = await getPosition();
+      if (!position) {
+        throw new Error("Nessuna posizione trovata");
+      }
 
       const res = await makeUserAuthenticatedRequest(
         `/places?lat=${position.coords.latitude}&lon=${position.coords.longitude}&radius=3000`,
@@ -101,7 +131,7 @@ async function fetchPlaces() {
     },
     {
       loading: "Caricamento luoghi consigliati",
-      error: (err: Error) => `Errore: ${err.message}`,
+      error: (err: Error) => err.message,
     },
   );
 }
@@ -120,7 +150,7 @@ onBeforeMount(async () => {
 
     // Prima posizione ricevuta
     if (!lastValidPosition) {
-      console.log("Prima posizione ricevuta. Imposto timer");
+      console.log("Prima posizione ricevuta");
       lastValidPosition = position;
       mapRef.value?.addPlayerMarker(latitude, longitude);
       return;
