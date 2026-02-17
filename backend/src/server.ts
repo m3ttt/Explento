@@ -8,8 +8,8 @@ dotenv.config();
 async function startServer() {
     try {
         await connectDatabase(); // connessione a MongoDB
-        const PORT = process.env.PORT || 3000;
-        app.listen(PORT, () => {
+        const PORT = Number(process.env.PORT) || 3000;
+        app.listen(PORT, "0.0.0.0", () => {
             console.log(`Server avviato sulla porta ${PORT}`);
         });
     } catch (err) {

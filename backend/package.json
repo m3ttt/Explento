@@ -7,7 +7,9 @@
   },
   "scripts": {
     "dev": "nodemon -e ts  --exec \"npm run compile\"",
-    "compile": "tsc && node dist/server.js || exit 1"
+    "compile": "tsc && node dist/server.js || exit 1",
+    "build": "tsc",
+    "start": "node dist/server.js"
   },
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
