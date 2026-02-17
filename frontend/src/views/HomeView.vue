@@ -45,7 +45,7 @@ let watchId: number | null = null;
 let stopTimer: ReturnType<typeof setTimeout> | null = null;
 let lastValidPosition: GeolocationPosition | null = null;
 
-const MIN_DISTANCE = 40; // metri minimi per considerare vero movimento
+const MIN_DISTANCE = 10; // metri minimi per considerare vero movimento
 const MAX_ACCURACY = 50; // ignora GPS con accuracy maggiore di 50 metri
 const STOP_DELAY = 4000; // 4 secondi fermo -> ricarico luoghi
 
