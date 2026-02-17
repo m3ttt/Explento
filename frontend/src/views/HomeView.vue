@@ -7,12 +7,16 @@ import ModifyPlace from "@/components/ModifyPlace.vue";
 import ExpertError from "@/components/ExpertError.vue";
 import Mission from "@/components/Mission.vue";
 
-import { onBeforeMount, Ref, ref, watch } from "vue";
+import { onBeforeMount, onUnmounted, Ref, ref, watch } from "vue";
 import z from "zod";
 
 import { User } from "@/lib/types/user";
 import { Place, PlaceSchema } from "@/lib/types/place";
-import { getPosition } from "@/lib/position";
+import {
+  getDistanceInMeters,
+  getPosition,
+  watchUserPosition,
+} from "@/lib/position";
 import { makeUserAuthenticatedRequest, refreshUser } from "@/lib/auth";
 import { toast } from "vue-sonner";
 import {
@@ -22,12 +26,28 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { MapPinOff } from "lucide-vue-next";
 
 let places = ref<Place[]>([]);
 const mapRef = ref();
 
 const activeTab = ref<"home" | "add" | "edit" | "profile" | "missions">("home");
 const selectedEditPlace = ref<Place | null>(null);
+
+let watchId: number | null = null;
+let stopTimer: ReturnType<typeof setTimeout> | null = null;
+let lastValidPosition: GeolocationPosition | null = null;
+
+const MIN_DISTANCE = 40; // metri minimi per considerare vero movimento
+const MAX_ACCURACY = 50; // ignora GPS con accuracy maggiore di 50 metri
+const STOP_DELAY = 4000; // 4 secondi fermo -> ricarico luoghi
 
 defineProps<{
   currentUser: Ref<User | null>;
@@ -37,8 +57,6 @@ defineProps<{
 watch(activeTab, async (newActive) => {
   if (newActive === "profile") {
     await refreshUser();
-  } else if (newActive === "home") {
-    await fetchPlaces();
   } else if (newActive === "missions") {
     await refreshUser();
   }
@@ -50,13 +68,11 @@ const openEdit = (place: Place) => {
   activeTab.value = "edit";
 };
 
-async function fetchPlaces() {
+async function fetchPlaces(position: GeolocationPosition) {
   places.value = [];
 
   toast.promise(
     async () => {
-      const position = await getPosition();
-
       const res = await makeUserAuthenticatedRequest(
         `/places?lat=${position.coords.latitude}&lon=${position.coords.longitude}&radius=3000`,
         {},
@@ -88,7 +104,63 @@ async function fetchPlaces() {
   );
 }
 
-onBeforeMount(fetchPlaces);
+onBeforeMount(async () => {
+  const position = await getPosition();
+  lastValidPosition = position;
+  console.log("Prima posizione trovata");
+
+  await fetchPlaces(position);
+
+  watchId = watchUserPosition((position) => {
+    const { latitude, longitude, accuracy } = position.coords;
+
+    // Se l'accuratezza è troppo bassa, ignora
+    if (accuracy > MAX_ACCURACY) {
+      console.log("Posizione poco accurata. Non faccio nulla");
+      return;
+    }
+
+    // Prima posizione ricevuta
+    if (!lastValidPosition) {
+      console.log("Prima posizione ricevuta. Imposto timer");
+      lastValidPosition = position;
+      mapRef.value?.addPlayerMarker(latitude, longitude);
+      return;
+    }
+
+    const distance = getDistanceInMeters(
+      lastValidPosition.coords.latitude,
+      lastValidPosition.coords.longitude,
+      latitude,
+      longitude,
+    );
+
+    // Se si è mosso meno di MIN_DISTANCE metri, ignora
+    if (distance < MIN_DISTANCE) {
+      console.log(
+        "Trovato movimento minimo (margine di errore), non resetto timer",
+      );
+      return;
+    }
+
+    lastValidPosition = position;
+
+    mapRef.value?.addPlayerMarker(latitude, longitude);
+
+    if (stopTimer) clearTimeout(stopTimer);
+    console.log("Movimento trovato. Resetto timer");
+
+    stopTimer = setTimeout(() => {
+      fetchPlaces(position);
+    }, STOP_DELAY);
+  });
+});
+
+onUnmounted(() => {
+  if (watchId != null) {
+    navigator.geolocation.clearWatch(watchId);
+  }
+});
 </script>
 
 <template>
@@ -105,37 +177,64 @@ onBeforeMount(fetchPlaces);
         <!-- Luoghi consigliati -->
         <div
           v-if="activeTab === 'home'"
-          class="relative w-full md:px-12 pointer-events-auto"
+          class="relative md:px-12 pointer-events-auto"
         >
-          <Carousel
-            class="w-full"
-            :opts="{
-              align: 'center',
-              // Permettere di scrollare senza limiti
-              skipSnaps: true,
-              slidesToScroll: 1,
-            }"
-          >
-            <CarouselContent>
-              <CarouselItem
-                v-for="item in places"
-                :key="item._id"
-                class="basis-auto pl-4"
-              >
-                <PlaceCard
-                  :place="item"
-                  :user="currentUser"
-                  @click="
-                    mapRef.flyToLocation(item.location.lat, item.location.lon)
-                  "
-                  @edit="openEdit"
-                />
-              </CarouselItem>
-            </CarouselContent>
+          <template v-if="places.length > 0" class="w-full">
+            <Carousel
+              class="w-full"
+              :opts="{
+                align: 'center',
+                skipSnaps: true,
+                slidesToScroll: 1,
+              }"
+            >
+              <CarouselContent>
+                <CarouselItem
+                  v-for="item in places"
+                  :key="item._id"
+                  class="basis-auto pl-4"
+                >
+                  <PlaceCard
+                    :place="item"
+                    :user="currentUser"
+                    @click="
+                      mapRef.flyToLocation(item.location.lat, item.location.lon)
+                    "
+                    @edit="openEdit"
+                  />
+                </CarouselItem>
+              </CarouselContent>
 
-            <CarouselPrevious class="hidden md:flex -left-10" />
-            <CarouselNext class="hidden md:flex -right-10" />
-          </Carousel>
+              <CarouselPrevious class="hidden md:flex -left-10" />
+              <CarouselNext class="hidden md:flex -right-10" />
+            </Carousel>
+          </template>
+
+          <div v-else class="w-full flex justify-center">
+            <Card
+              class="w-full max-w-md border-0 bg-background/95 backdrop-blur-sm shadow-lg rounded-2xl"
+            >
+              <CardContent
+                class="flex flex-col items-center justify-center text-center p-8 gap-4"
+              >
+                <div
+                  class="flex items-center justify-center w-14 h-14 rounded-full bg-muted"
+                >
+                  <MapPinOff class="w-7 h-7 text-muted-foreground" />
+                </div>
+
+                <div class="space-y-1">
+                  <CardTitle class="text-lg font-semibold">
+                    Nessun luogo trovato
+                  </CardTitle>
+                  <CardDescription class="text-sm">
+                    Prova a spostarti nel comune di Trento per scoprire nuovi
+                    luoghi.
+                  </CardDescription>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <!-- Profilo -->
