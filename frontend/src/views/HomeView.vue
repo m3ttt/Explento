@@ -7,7 +7,7 @@ import ModifyPlace from "@/components/ModifyPlace.vue";
 import ExpertError from "@/components/ExpertError.vue";
 import Mission from "@/components/Mission.vue";
 
-import { onBeforeMount, onMounted, onUnmounted, Ref, ref, watch } from "vue";
+import { onBeforeMount, onUnmounted, Ref, ref, watch } from "vue";
 import z from "zod";
 
 import { User } from "@/lib/types/user";
@@ -31,7 +31,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { MapPinOff } from "lucide-vue-next";
@@ -214,6 +213,7 @@ onUnmounted(() => {
         >
           <template v-if="places.length > 0" class="w-full">
             <Carousel
+              v-slot="{ canScrollNext, canScrollPrev }"
               class="w-full"
               :opts="{
                 align: 'center',
@@ -221,22 +221,38 @@ onUnmounted(() => {
                 slidesToScroll: 1,
               }"
             >
-              <CarouselContent>
-                <CarouselItem
-                  v-for="item in places"
-                  :key="item._id"
-                  class="basis-auto pl-4"
-                >
-                  <PlaceCard
-                    :place="item"
-                    :user="currentUser"
-                    @click="
-                      mapRef.flyToLocation(item.location.lat, item.location.lon)
-                    "
-                    @edit="openEdit"
-                  />
-                </CarouselItem>
-              </CarouselContent>
+              <div class="rounded-2xl w-full overflow-hidden">
+                <!-- Mostro sfumatura solo se esistono altri places a sinistra -->
+                <div
+                  v-if="canScrollPrev"
+                  class="mobile-fade-left rounded-2xl"
+                />
+
+                <!-- Mostro sfumatura solo se esistono altri places a destra -->
+                <div
+                  v-if="canScrollNext"
+                  class="mobile-fade-right rounded-2xl"
+                />
+                <CarouselContent>
+                  <CarouselItem
+                    v-for="item in places"
+                    :key="item._id"
+                    class="basis-auto pl-4"
+                  >
+                    <PlaceCard
+                      :place="item"
+                      :user="currentUser"
+                      @click="
+                        mapRef.flyToLocation(
+                          item.location.lat,
+                          item.location.lon,
+                        )
+                      "
+                      @edit="openEdit"
+                    />
+                  </CarouselItem>
+                </CarouselContent>
+              </div>
 
               <CarouselPrevious class="hidden md:flex -left-10" />
               <CarouselNext class="hidden md:flex -right-10" />
@@ -324,5 +340,24 @@ onUnmounted(() => {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+.mobile-fade-left,
+.mobile-fade-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.mobile-fade-left {
+  left: 0;
+  background: linear-gradient(to right, var(--background), transparent);
+}
+
+.mobile-fade-right {
+  right: 0;
+  background: linear-gradient(to left, var(--background), transparent);
 }
 </style>
