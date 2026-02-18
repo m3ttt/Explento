@@ -1,6 +1,8 @@
 import { API_ENDPOINT } from "./config";
 import { ref, type Ref } from "vue";
 import { OperatorSchema, type Operator } from "./types/operator";
+import { router } from "./router";
+import { safeFetch } from "./auth";
 
 // Variabile che rappresenta l'utente
 let operator = ref<Operator | null>(null);
@@ -16,7 +18,7 @@ export async function checkAuthOp(): Promise<Ref<Operator | null>> {
   if (!token) return operator;
 
   // Provo a fare /operator/me con il token
-  const resp = await fetch(`${API_ENDPOINT}/operator/me`, {
+  const resp = await safeFetch(`${API_ENDPOINT}/operator/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -42,7 +44,7 @@ export async function loginOp(
   email: string,
   password: string,
 ): Promise<{ error: boolean }> {
-  const resp = await fetch(`${API_ENDPOINT}/operator/login`, {
+  const resp = await safeFetch(`${API_ENDPOINT}/operator/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -82,7 +84,7 @@ export async function makeOperatorAuthenticatedRequest(
     Authorization: `Bearer ${token}`,
   };
 
-  const resp = await fetch(`${API_ENDPOINT}${path}`, {
+  const resp = await safeFetch(`${API_ENDPOINT}${path}`, {
     ...options,
     headers,
   });

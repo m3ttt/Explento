@@ -1,12 +1,34 @@
 import { API_ENDPOINT } from "./config";
 import { UserSchema, type User } from "../lib/types/user";
 import { ref, type Ref } from "vue";
-import { tokenToString } from "typescript";
+import { router } from "./router";
 
 // Variabile che rappresenta l'utente
 let user = ref<User | null>(null);
-
 const storageTokenName = "userToken";
+
+// Funzione che serve per ritornare alla pagina di errore in caso di errori di rete
+export async function safeFetch(
+  url: string,
+  options: RequestInit = {},
+): Promise<Response> {
+  try {
+    const resp = await fetch(url, options);
+    return resp;
+  } catch (err: any) {
+    // Prendo il messaggio reale dall'errore, fallback se non esiste
+    const errorMessage = err?.message || "Errore sconosciuto";
+
+    router.push({
+      path: "/error",
+      query: {
+        message: "Impossibile contattare le API",
+        code: errorMessage,
+      },
+    });
+    throw err;
+  }
+}
 
 export async function checkAuth(): Promise<Ref<User | null>> {
   user.value = null;
@@ -17,7 +39,7 @@ export async function checkAuth(): Promise<Ref<User | null>> {
   if (!token) return user;
 
   // Provo a fare /me con il token
-  const resp = await fetch(`${API_ENDPOINT}/me`, {
+  const resp = await safeFetch(`${API_ENDPOINT}/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -43,7 +65,7 @@ export async function login(
   username: string,
   password: string,
 ): Promise<{ error: boolean }> {
-  const resp = await fetch(`${API_ENDPOINT}/auth/login`, {
+  const resp = await safeFetch(`${API_ENDPOINT}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -79,7 +101,7 @@ export async function register(
   name: string,
   surname: string,
 ): Promise<{ error: boolean }> {
-  const resp = await fetch(`${API_ENDPOINT}/auth/register`, {
+  const resp = await safeFetch(`${API_ENDPOINT}/auth/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -107,7 +129,7 @@ export async function refreshUser() {
     return;
   }
 
-  const resp = await fetch(`${API_ENDPOINT}/me`, {
+  const resp = await safeFetch(`${API_ENDPOINT}/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -131,19 +153,14 @@ export async function makeUserAuthenticatedRequest(
   options: RequestInit = {},
 ): Promise<Response> {
   const token = localStorage.getItem(storageTokenName);
-
   const headers: HeadersInit = {
     ...(options.headers ?? {}),
     Authorization: `Bearer ${token}`,
   };
 
-  try {
-    const resp = await fetch(`${API_ENDPOINT}${path}`, {
-      ...options,
-      headers,
-    });
-    return resp;
-  } catch (err: any) {
-    throw new Error(err);
-  }
+  const resp = await safeFetch(`${API_ENDPOINT}${path}`, {
+    ...options,
+    headers,
+  });
+  return resp;
 }

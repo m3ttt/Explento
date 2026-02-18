@@ -95,7 +95,7 @@ async function fetchPlaces() {
       ?.unwrap();
   } catch (err) {
     // Errore -> Ritorno posizione di fallback
-    toast.error(
+    toast.warning(
       "Impossibile stabilire posizione. Uso la posizione predefinita",
     );
     position = fallBackPosition;
@@ -254,8 +254,8 @@ onUnmounted(() => {
                 </CarouselContent>
               </div>
 
-              <CarouselPrevious class="hidden md:flex -left-10" />
-              <CarouselNext class="hidden md:flex -right-10" />
+              <CarouselPrevious class="hidden md:flex -left-10 border-none" />
+              <CarouselNext class="hidden md:flex -right-10 border-none" />
             </Carousel>
           </template>
 
