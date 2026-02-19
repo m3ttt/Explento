@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Place } from "@/lib/types/place";
 import { formatCategory } from "@/lib/utils";
 import { toast } from "vue-sonner";
-import { getPosition } from "@/lib/position";
+import { fallBackPosition, getPosition } from "@/lib/position";
 import { makeUserAuthenticatedRequest, refreshUser } from "@/lib/auth";
 import { User } from "@/lib/types/user";
 
@@ -32,7 +32,12 @@ const handleEdit = () => {
 const isTooFar = computed(() => props.place.distance > 20);
 
 const sendCompletedPlace = async () => {
-  const position = await getPosition();
+  let position: GeolocationPosition;
+  try {
+    position = await getPosition();
+  } catch (_) {
+    position = fallBackPosition;
+  }
 
   const resp = await makeUserAuthenticatedRequest(
     `/me/visit?placeId=${props.place._id}`,
