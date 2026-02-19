@@ -4,6 +4,7 @@ info:
   version: 1.0.0
 
 servers:
+  - url: https://explento-backend.onrender.com/
   - url: http://localhost:3000/api/v1
 
 paths:
@@ -761,81 +762,6 @@ paths:
                   error:
                     type: string
                     example: "Errore interno del server"
-
-    # TODO: Rimuovere in caso non si faccia l'API
-    # post:
-    #   summary: Crea una nuova missione
-    #   tags: [Missions]
-    #   security:
-    #     - bearerAuth: []
-    #   requestBody:
-    #     required: true
-    #     content:
-    #       application/json:
-    #         schema:
-    #           type: object
-    #           properties:
-    #             name:
-    #               type: string
-    #               example: "Missione Parco"
-    #             description:
-    #               type: string
-    #               example: "Esplora il parco e segnala punti di interesse"
-    #             minLevel:
-    #               type: number
-    #               example: 1
-    #             rewardExp:
-    #               type: number
-    #               example: 50
-    #             categories:
-    #               type: array
-    #               items:
-    #                 type: string
-    #               example: ["montagna","rilassante"]
-    #             requiredPlaces:
-    #               type: array
-    #               items:
-    #                 type: object
-    #                 properties:
-    #                   placeId:
-    #                     type: string
-    #                     example: "65f1a2c9e4b0a12f34abcd99"
-    #             requiredCount:
-    #               type: number
-    #               example: 1
-    #   responses:
-    #     "201":
-    #       description: Missione creata
-    #       content:
-    #         application/json:
-    #           schema:
-    #             type: object
-    #             properties:
-    #               success:
-    #                 type: boolean
-    #                 example: true
-    #               mission:
-    #                 $ref: "#/components/schemas/Mission"
-    #     "400":
-    #       description: Campi obbligatori mancanti
-    #       content:
-    #         application/json:
-    #           schema:
-    #             type: object
-    #             properties:
-    #               error:
-    #                 type: string
-    #                 example: "Nome e rewardExp obbligatori"
-    #     "500":
-    #       description: Errore server
-    #       content:
-    #         application/json:
-    #           schema:
-    #             type: object
-    #             properties:
-    #               error:
-    #                 type: string
-    #                 example: "Errore interno del server"
 
   /missions/available:
     get:
