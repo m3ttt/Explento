@@ -1,6 +1,6 @@
 # 🥀 Explento
 
-Explento è un'applicazione web full-stack progettata per valorizzare il territorio di Trento attraverso una distribuzione più equilibrata delle informazioni su luoghi di interesse, eventi e punti culturali.
+Explento è un'applicazione web full-stack progettata per valorizzare il territorio di Trento attraverso una distribuzione più equilibrata delle informazioni su luoghi di interesse, punti culturali e in generale zone poco valorizzate.
 
 L'obiettivo è ridurre la concentrazione dei flussi turistici nelle sole aree centrali e favorire la scoperta di luoghi meno conosciuti ma significativi per il patrimonio cittadino.
 
